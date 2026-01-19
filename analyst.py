@@ -429,10 +429,10 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
 
                 column_issues = {}
                 if total_rows > 0:
-                    for col, count in null_counts.items():
-                        if count > 0:
-                            null_pct = count / total_rows * 100
-                            column_issues[col] = [f"Missing: {null_pct:.1f}%"]
+                    column_issues = {
+                        col: [f"Missing: {count / total_rows * 100:.1f}%"]
+                        for col, count in null_counts.items() if count > 0
+                    }
 
                 result = {
                     "total_rows": total_rows,
