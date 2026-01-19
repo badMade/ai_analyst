@@ -70,4 +70,10 @@ This repository integrates multiple AI assistants:
 - `@jules` - Google Labs Jules coding agent
 - **Gemini Code Assist** - Automatic PR reviews
 
-All PRs receive automated reviews from both Claude and Gemini.
+### OpenAI ChatGPT/Codex
+- `@chatgpt` - ChatGPT GPT-4o assistance
+- `@codex` - Code-focused help
+- `@codex-agent` - Automated code changes
+- **ChatGPT Codex Review** - Automatic PR reviews
+
+All PRs receive automated reviews from Claude, Gemini, and ChatGPT.
