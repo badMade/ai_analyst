@@ -13,62 +13,6 @@ on:
     types: [submitted]
 
 jobs:
-  # Gemini Code Assist - Automated Code Review
-  gemini-code-review:
-    name: Gemini Code Assist Review
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Gemini Code Assist Review
-        uses: google-github-actions/gemini-code-assist-action@v1
-        with:
-          project_id: ${{ secrets.GOOGLE_CLOUD_PROJECT }}
-          location: us-central1
-          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.SERVICE_ACCOUNT }}
-
-  # Google Labs Jules - AI Coding Agent
-  jules-agent:
-    name: Jules AI Agent
-    if: |
-      contains(github.event.comment.body, '@jules') ||
-      contains(github.event.issue.body, '@jules')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-      issues: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.SERVICE_ACCOUNT }}
-
-      - name: Setup Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-
-      - name: Run Jules Agent
-        uses: google-github-actions/jules-agent-action@v1
-        with:
-          project_id: ${{ secrets.GOOGLE_CLOUD_PROJECT }}
-          trigger_phrase: "@jules"
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          model: gemini-2.0-flash
-
   # Gemini API Direct Integration (Google AI Studio)
   gemini-ai-studio:
     name: Gemini AI Studio Assistant
