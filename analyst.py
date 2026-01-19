@@ -63,7 +63,7 @@ class AnalysisContext:
             "columns": len(df.columns),
             "column_names": df.columns.tolist(),
             "dtypes": {col: str(dtype) for col, dtype in df.dtypes.items()},
-            "null_counts": {col: int(df[col].isna().sum()) for col in df.columns}
+            "null_counts": df.isna().sum().to_dict()
         }
     
     def get_dataset(self, name: str) -> pd.DataFrame:
