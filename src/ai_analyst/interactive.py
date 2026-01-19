@@ -13,7 +13,7 @@ from rich.panel import Panel
 from rich.prompt import Prompt
 
 from ai_analyst.analyst import StandaloneAnalyst
-from ai_analyst.utils.config import get_settings, setup_logging
+from ai_analyst.utils.config import get_settings, setup_logging, sanitize_path
 
 console = Console()
 
@@ -70,11 +70,15 @@ def run_interactive(file_path: str | None = None, model: str = "claude-sonnet-4-
             
             if user_input.lower().startswith("load "):
                 new_file = user_input[5:].strip()
-                if Path(new_file).exists():
-                    current_file = new_file
-                    console.print(f"[green]Loaded:[/green] {current_file}")
-                else:
-                    console.print(f"[red]File not found:[/red] {new_file}")
+                try:
+                    path = sanitize_path(new_file)
+                    if path.exists():
+                        current_file = str(path)
+                        console.print(f"[green]Loaded:[/green] {current_file}")
+                    else:
+                        console.print(f"[red]File not found:[/red] {new_file}")
+                except ValueError as e:
+                    console.print(f"[red]Security Error:[/red] {e}")
                 continue
             
             # Run analysis
