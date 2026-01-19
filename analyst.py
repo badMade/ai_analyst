@@ -13,7 +13,7 @@ from typing import Any
 
 import pandas as pd
 import numpy as np
-from anthropic import Anthropic
+from anthropic import Anthropic, AsyncAnthropic
 from pydantic import BaseModel
 
 from ai_analyst.tools.statistical import (
@@ -295,6 +295,7 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
             raise ValueError("ANTHROPIC_API_KEY not set")
         
         self.client = Anthropic(api_key=settings.anthropic_api_key)
+        self.async_client = AsyncAnthropic(api_key=settings.anthropic_api_key)
         self.model = model
         self.context = AnalysisContext()
         self.max_iterations = 15
@@ -486,6 +487,27 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
         Returns:
             Final analysis response
         """
+        try:
+            return asyncio.run(self.analyze_async(query, file_path))
+        except RuntimeError as e:
+            if "asyncio.run() cannot be called from a running event loop" in str(e):
+                raise RuntimeError(
+                    "Detected an existing event loop. If you are in a Jupyter Notebook or "
+                    "async environment, please use 'await analyst.analyze_async(...)' instead."
+                ) from e
+            raise
+
+    async def analyze_async(self, query: str, file_path: str | None = None) -> str:
+        """
+        Run analysis based on user query asynchronously.
+
+        Args:
+            query: Analysis request
+            file_path: Optional file to analyze
+
+        Returns:
+            Final analysis response
+        """
         # Build initial message
         user_content = query
         if file_path:
@@ -497,7 +519,7 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
         for iteration in range(self.max_iterations):
             logger.debug(f"Iteration {iteration + 1}")
             
-            response = self.client.messages.create(
+            response = await self.async_client.messages.create(
                 model=self.model,
                 max_tokens=4096,
                 system=self.SYSTEM_PROMPT,
@@ -526,7 +548,8 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                 for block in response.content:
                     if block.type == "tool_use":
                         logger.info(f"Executing tool: {block.name}")
-                        result = self._execute_tool(block.name, block.input)
+                        # Wrap blocking tool execution in thread
+                        result = await asyncio.to_thread(self._execute_tool, block.name, block.input)
                         tool_results.append({
                             "type": "tool_result",
                             "tool_use_id": block.id,
@@ -540,10 +563,6 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                 break
         
         return "Analysis reached maximum iterations. Please try a more specific query."
-    
-    async def analyze_async(self, query: str, file_path: str | None = None) -> str:
-        """Async wrapper for analyze."""
-        return await asyncio.to_thread(self.analyze, query, file_path)
 
 
 def create_analyst(model: str = "claude-sonnet-4-20250514") -> StandaloneAnalyst:
