@@ -1,0 +1,62 @@
+name: Git Actions
+
+on:
+  pull_request:
+    types: [closed]
+  push:
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: write
+
+jobs:
+  # Auto-delete branches after PR merge
+  auto-delete-branch:
+    name: Auto Delete Merged Branch
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+    steps:
+      - name: Delete branch
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branch = context.payload.pull_request.head.ref;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            // Skip deletion for protected branch patterns
+            const protectedPatterns = ['main', 'master', 'develop', 'release'];
+            if (protectedPatterns.some(pattern => branch === pattern || branch.startsWith(`${pattern}/`))) {
+              console.log(`Skipping deletion of protected branch: ${branch}`);
+              return;
+            }
+
+            try {
+              await github.rest.git.deleteRef({
+                owner,
+                repo,
+                ref: `heads/${branch}`
+              });
+              console.log(`Successfully deleted branch: ${branch}`);
+            } catch (error) {
+              if (error.status === 422) {
+                console.log(`Branch ${branch} was already deleted`);
+              } else {
+                throw error;
+              }
+            }
+
+  # Log merge activity
+  log-merge:
+    name: Log Merge Activity
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+    steps:
+      - name: Log merge details
+        run: |
+          echo "PR #${{ github.event.pull_request.number }} was merged"
+          echo "Branch: ${{ github.event.pull_request.head.ref }}"
+          echo "Merged by: ${{ github.event.pull_request.merged_by.login }}"
+          echo "Merge commit: ${{ github.event.pull_request.merge_commit_sha }}"
