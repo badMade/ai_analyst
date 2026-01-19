@@ -422,14 +422,20 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                 df = self.context.get_dataset(tool_input["dataset_name"])
                 
                 total_cells = df.size
-                null_cells = df.isna().sum().sum()
+                # Calculate null counts for all columns at once to avoid re-scanning in the loop
+                null_counts = df.isna().sum()
+                null_cells = null_counts.sum()
                 duplicate_rows = df.duplicated().sum()
                 
                 column_issues = {}
+                total_rows = len(df)
+
                 for col in df.columns:
                     issues = []
-                    null_pct = df[col].isna().sum() / len(df) * 100
-                    if null_pct > 0:
+                    # Reuse calculated value instead of calling df[col].isna().sum()
+                    null_count = null_counts[col]
+                    if null_count > 0:
+                        null_pct = (null_count / total_rows) * 100
                         issues.append(f"Missing: {null_pct:.1f}%")
                     if issues:
                         column_issues[col] = issues
