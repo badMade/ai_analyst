@@ -320,12 +320,16 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                 columns = tool_input.get("columns")
                 
                 if columns:
-                    df = df[columns]
+                    preview_df = df.head(n_rows)[columns]
+                    column_names = columns
+                else:
+                    preview_df = df.head(n_rows)
+                    column_names = df.columns.tolist()
                 
                 result = {
-                    "data": df.head(n_rows).to_dict(orient="records"),
+                    "data": preview_df.to_dict(orient="records"),
                     "total_rows": len(df),
-                    "columns": df.columns.tolist()
+                    "columns": column_names
                 }
             
             elif tool_name == "describe_statistics":
