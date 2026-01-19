@@ -56,3 +56,18 @@ When reviewing PRs:
 2. Verify API key and sensitive data are not exposed
 3. Ensure pandas operations are memory-efficient
 4. Validate Claude API usage follows best practices
+
+## AI Integration
+
+This repository integrates multiple AI assistants:
+
+### Claude Code (Anthropic)
+- `@claude` - General assistance and code review
+- `@claude agent` - Automated code changes
+
+### Google AI
+- `@gemini` - Gemini AI Studio assistance
+- `@jules` - Google Labs Jules coding agent
+- **Gemini Code Assist** - Automatic PR reviews
+
+All PRs receive automated reviews from both Claude and Gemini.
