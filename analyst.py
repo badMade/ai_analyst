@@ -357,18 +357,15 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                 numeric_df = df.select_dtypes(include=[np.number])
                 corr_matrix = numeric_df.corr(method=method)
                 
-                correlations = []
-                cols = corr_matrix.columns.tolist()
-                for i, col_a in enumerate(cols):
-                    for col_b in cols[i+1:]:
-                        corr = corr_matrix.loc[col_a, col_b]
-                        if pd.notna(corr):
-                            correlations.append({
-                                "column_a": col_a,
-                                "column_b": col_b,
-                                "correlation": round(corr, 4)
-                            })
+                # Optimized implementation using vectorization
+                mask = np.triu(np.ones(corr_matrix.shape, dtype=bool), k=1)
+                stacked = corr_matrix.where(mask).stack()
                 
+                df_corr = stacked.reset_index()
+                df_corr.columns = ['column_a', 'column_b', 'correlation']
+                df_corr['correlation'] = df_corr['correlation'].round(4)
+
+                correlations = df_corr.to_dict('records')
                 correlations.sort(key=lambda x: abs(x["correlation"]), reverse=True)
                 result = {"correlations": correlations, "method": method}
             
