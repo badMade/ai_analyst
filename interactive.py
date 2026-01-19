@@ -12,7 +12,7 @@ from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.prompt import Prompt
 
-from ai_analyst.analyst import StandaloneAnalyst
+from analyst import StandaloneAnalyst
 from ai_analyst.utils.config import get_settings, setup_logging
 
 console = Console()
