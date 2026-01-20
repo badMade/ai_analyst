@@ -126,9 +126,8 @@ Use inline code references where applicable."""
 
     except Exception as e:
         print(f"Error generating review: {e}")
-        # Post error as comment
         pr.create_issue_comment(
-            f"Gemini Code Review encountered an error: {str(e)}"
+            "Gemini Code Review encountered an error. Please check the workflow logs for details."
         )
 
 
