@@ -170,12 +170,29 @@ Analyze the request and provide changes if needed."""
                 reply += f"- `{change['file']}` ({change['action']})\n"
 
             # Apply changes
+            workspace_root = os.path.abspath(os.environ.get("GITHUB_WORKSPACE", os.getcwd()))
             for change in changes:
+                # Resolve the target path and ensure it stays within the workspace root
+                file_spec = change.get("file", "")
+                if not file_spec:
+                    print("Skipping change with empty file path")
+                    continue
+
+                if os.path.isabs(file_spec):
+                    target_path = os.path.abspath(file_spec)
+                else:
+                    target_path = os.path.abspath(os.path.join(workspace_root, file_spec))
+
+                if not (target_path == workspace_root or target_path.startswith(workspace_root + os.sep)):
+                    print(f"Skipping unsafe file operation outside workspace: {file_spec} -> {target_path}")
+                    continue
+
                 if change["action"] in ["modify", "create"]:
-                    write_file_content(change["file"], change["content"])
+                    # write_file_content is expected to work with repository-relative paths
+                    write_file_content(file_spec, change["content"])
                 elif change["action"] == "delete":
-                    if os.path.exists(change["file"]):
-                        os.remove(change["file"])
+                    if os.path.exists(target_path):
+                        os.remove(target_path)
 
             # Create branch and commit
             branch_name = f"codex-agent/{issue_or_pr.number}"
