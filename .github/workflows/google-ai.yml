@@ -14,26 +14,19 @@ on:
 
 jobs:
   # Gemini Code Assist - Automated Code Review
+  # NOTE: The gemini-code-assist-action has been deprecated/removed by Google.
+  # This job is disabled until a replacement is available.
+  # See: https://github.com/google-github-actions for available actions
   gemini-code-review:
     name: Gemini Code Assist Review
-    if: github.event_name == 'pull_request'
+    if: false  # Disabled - google-github-actions/gemini-code-assist-action no longer exists
     runs-on: ubuntu-latest
     permissions:
       contents: read
       pull-requests: write
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Gemini Code Assist Review
-        uses: google-github-actions/gemini-code-assist-action@v1
-        with:
-          project_id: ${{ secrets.GOOGLE_CLOUD_PROJECT }}
-          location: us-central1
-          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.SERVICE_ACCOUNT }}
+      - name: Placeholder
+        run: echo "Gemini Code Assist action is not available"
 
   # Google Labs Jules - AI Coding Agent
   jules-agent:
