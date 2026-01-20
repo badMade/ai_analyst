@@ -109,7 +109,7 @@ Provide a helpful, detailed response."""
         print("Response posted successfully")
 
     except Exception as e:
-        error_msg = f"ChatGPT encountered an error: {str(e)}"
+        error_msg = "ChatGPT encountered an error. Please check the workflow logs for details."
         issue_or_pr.create_comment(error_msg)
         print(f"Error: {e}")
 
