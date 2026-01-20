@@ -205,7 +205,12 @@ Analyze the request and provide changes if needed."""
 
             # Create branch and commit
             branch_name = f"codex-agent/{issue_or_pr.number}"
-            subprocess.run(["git", "checkout", "-b", branch_name], check=False)
+            try:
+                # Try to create a new branch and switch to it
+                subprocess.run(["git", "checkout", "-b", branch_name], check=True)
+            except subprocess.CalledProcessError:
+                # If the branch already exists, switch to it instead
+                subprocess.run(["git", "checkout", branch_name], check=True)
 
             if git_commit_and_push(commit_msg, branch_name):
                 reply += f"\n\nChanges committed to branch `{branch_name}`"
