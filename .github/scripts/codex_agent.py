@@ -179,7 +179,32 @@ Analyze the request and provide changes if needed."""
 
             # Create branch and commit
             branch_name = f"codex-agent/{issue_or_pr.number}"
-            subprocess.run(["git", "checkout", "-b", branch_name], check=False)
+            # Try to create and check out a new branch. If that fails (e.g., branch exists),
+            # fall back to checking out the existing branch. If both fail, do not commit.
+            create_branch_result = subprocess.run(
+                ["git", "checkout", "-b", branch_name],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            if create_branch_result.returncode != 0:
+                checkout_existing_result = subprocess.run(
+                    ["git", "checkout", branch_name],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                )
+                if checkout_existing_result.returncode != 0:
+                    reply += (
+                        "\n\n*Note: Failed to create or checkout branch "
+                        f"`{branch_name}`; changes were not committed automatically.*"
+                    )
+                    issue_or_pr.create_comment(reply)
+                    print(
+                        f"Failed to create or checkout branch {branch_name}: "
+                        f"{create_branch_result.stderr or checkout_existing_result.stderr}"
+                    )
+                    return
 
             if git_commit_and_push(commit_msg, branch_name):
                 reply += f"\n\nChanges committed to branch `{branch_name}`"
