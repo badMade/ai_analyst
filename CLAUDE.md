@@ -37,7 +37,7 @@ ai-analyst/
 
 ### Environment Variables
 - `ANTHROPIC_API_KEY` - Required for Claude API access
-- `AI_ANALYST_MODEL` - Model to use (default: claude-sonnet-4-20250514)
+- `AI_ANALYST_MODEL` - Model to use (default: claude-3.5-sonnet-20240620)
 - `AI_ANALYST_LOG_LEVEL` - Logging verbosity
 
 ### Testing
