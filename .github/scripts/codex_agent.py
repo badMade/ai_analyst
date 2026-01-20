@@ -38,10 +38,26 @@ def get_file_content(file_path: str) -> str:
 
 
 def write_file_content(file_path: str, content: str) -> bool:
-    """Write content to file."""
+    """Write content to file with path validation to prevent directory traversal."""
     try:
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
-        with open(file_path, "w") as f:
+        # Get workspace root for path validation
+        workspace_root = os.path.abspath(os.environ.get("GITHUB_WORKSPACE", os.getcwd()))
+
+        # Resolve the target path
+        if os.path.isabs(file_path):
+            target_path = os.path.abspath(file_path)
+        else:
+            target_path = os.path.abspath(os.path.join(workspace_root, file_path))
+
+        # Validate path is within workspace to prevent directory traversal
+        if not (target_path == workspace_root or target_path.startswith(workspace_root + os.sep)):
+            print(f"Security: Refusing to write outside workspace: {file_path}")
+            return False
+
+        dir_path = os.path.dirname(target_path)
+        if dir_path:
+            os.makedirs(dir_path, exist_ok=True)
+        with open(target_path, "w") as f:
             f.write(content)
         return True
     except Exception:
@@ -85,7 +101,6 @@ def main():
     # Determine context
     comment_body = ""
     issue_or_pr = None
-    is_pr = False
 
     if "comment" in event:
         comment_body = event["comment"].get("body", "")
@@ -93,7 +108,6 @@ def main():
             issue_or_pr = repo.get_issue(event["issue"]["number"])
         elif "pull_request" in event:
             issue_or_pr = repo.get_pull(event["pull_request"]["number"])
-            is_pr = True
     elif "issue" in event:
         comment_body = event["issue"].get("body", "")
         issue_or_pr = repo.get_issue(event["issue"]["number"])
