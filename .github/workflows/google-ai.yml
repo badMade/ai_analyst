@@ -77,14 +77,14 @@ jobs:
       - name: Setup Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Run Jules Agent
-        uses: google-github-actions/jules-agent-action@v1
-        with:
-          project_id: ${{ secrets.GOOGLE_CLOUD_PROJECT }}
-          trigger_phrase: "@jules"
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          model: gemini-2.0-flash
-
+      - name: Run Jules Agent (disabled - action unavailable)
+        run: |
+          echo "The google-github-actions/jules-agent-action@v1 GitHub Action is not available."
+          echo "This step is currently a placeholder to keep the workflow valid."
+          echo "Configured values:"
+          echo "  project_id=${{ secrets.GOOGLE_CLOUD_PROJECT }}"
+          echo "  trigger_phrase=\"@jules\""
+          echo "  model=gemini-2.0-flash"
   # Gemini API Direct Integration (Google AI Studio)
   gemini-ai-studio:
     name: Gemini AI Studio Assistant
