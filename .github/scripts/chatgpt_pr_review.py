@@ -17,7 +17,11 @@ def get_pr_diff() -> str:
         with open("/tmp/pr_diff.txt") as f:
             return f.read()
     except FileNotFoundError:
-        return ""
+        # Fail loudly if the diff file is missing so workflow issues are visible
+        raise FileNotFoundError(
+            "PR diff file '/tmp/pr_diff.txt' not found. "
+            "Ensure the previous workflow step generated this file."
+        )
 
 
 def get_changed_files() -> list[str]:
