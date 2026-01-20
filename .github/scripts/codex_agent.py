@@ -133,12 +133,21 @@ When asked to make changes, provide your response in this JSON format:
 
 If no code changes are needed, set "changes" to an empty array and provide your response in "analysis"."""
 
+    max_files_env = os.environ.get("CODEX_AGENT_MAX_FILES")
+    try:
+        max_files_to_show = int(max_files_env) if max_files_env is not None else 50
+    except ValueError:
+        max_files_to_show = 50
+    if max_files_to_show < 1:
+        max_files_to_show = 1
+    files_for_context = files[:max_files_to_show]
+
     user_message = f"""Repository: {repo.full_name}
 Issue/PR: {issue_or_pr.title}
 Description: {issue_or_pr.body or 'No description'}
 
 Files in repository:
-{chr(10).join(files[:50])}
+{chr(10).join(files_for_context)}
 
 User request: {prompt}
 
