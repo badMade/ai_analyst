@@ -41,13 +41,13 @@ def write_file_content(file_path: str, content: str) -> bool:
     """Write content to file with path validation to prevent directory traversal."""
     try:
         # Get workspace root for path validation
-        workspace_root = os.path.abspath(os.environ.get("GITHUB_WORKSPACE", os.getcwd()))
+        workspace_root = os.path.realpath(os.environ.get("GITHUB_WORKSPACE", os.getcwd()))
 
-        # Resolve the target path
+        # Resolve the target path, resolving symlinks
         if os.path.isabs(file_path):
-            target_path = os.path.abspath(file_path)
+            target_path = os.path.realpath(file_path)
         else:
-            target_path = os.path.abspath(os.path.join(workspace_root, file_path))
+            target_path = os.path.realpath(os.path.join(workspace_root, file_path))
 
         # Validate path is within workspace to prevent directory traversal
         if not (target_path == workspace_root or target_path.startswith(workspace_root + os.sep)):
