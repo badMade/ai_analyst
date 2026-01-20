@@ -11,14 +11,16 @@ AI Analyst is a Python-based tool that leverages Claude for intelligent data ana
 
 ## Repository Structure
 
-```
-ai_analyst/
-├── analyst.py        # Core AIAnalyst class with Claude integration
-├── interactive.py    # Interactive REPL mode implementation
-├── run.py           # CLI entry point
-├── pyproject.toml   # Project configuration (hatch-based)
-└── README.md        # Documentation
-```
+ai-analyst/
+├── run.py                  # Standalone runner
+├── src/ai_analyst/
+│   ├── analyst.py          # Core standalone analyst
+│   ├── cli.py              # Click CLI
+│   ├── interactive.py      # REPL mode
+│   ├── tools/statistical.py
+│   └── utils/config.py
+├── data/sample_sales.csv
+└── pyproject.toml
 
 ## Development Guidelines
 
