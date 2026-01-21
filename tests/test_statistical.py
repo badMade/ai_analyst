@@ -72,8 +72,8 @@ class TestComputeDescriptiveStats:
         assert stats["75%"] == pytest.approx(7.75, rel=0.1)
 
 
-class TestTestNormality:
-    """Tests for test_normality function."""
+class TestCheckNormality:
+    """Tests for check_normality function."""
 
     def test_normal_data_detected(self):
         """Normally distributed data is detected as normal."""
