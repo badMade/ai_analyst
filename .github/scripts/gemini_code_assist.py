@@ -26,9 +26,11 @@ def get_pr_diff() -> str:
             capture_output=True,
             text=True,
             check=True,
+            timeout=60,
         )
         return result.stdout
-    except subprocess.CalledProcessError:
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+        print(f"Error getting PR diff: {e}")
         return ""
 
 
