@@ -71,11 +71,29 @@ print(response)
 
 ## Configuration
 
+### Environment Variables
+
 | Variable | Description |
 |----------|-------------|
 | `ANTHROPIC_API_KEY` | Claude API key (required) |
 | `AI_ANALYST_MODEL` | Model (default: claude-sonnet-4-20250514) |
 | `AI_ANALYST_LOG_LEVEL` | DEBUG, INFO, WARNING, ERROR |
+
+### GitHub Actions Setup
+
+To enable Claude Code integration in GitHub Actions, add the required secret to your repository:
+
+1. Get an API key from [Anthropic's Console](https://console.anthropic.com/)
+2. Go to your repository Settings → Secrets and variables → Actions
+3. Click "New repository secret"
+4. Name: `ANTHROPIC_API_KEY`
+5. Value: Your API key from Anthropic
+6. Click "Add secret"
+
+The workflow in `.github/workflows/claude.yml` uses this secret for:
+- Automatic PR reviews when PRs are opened
+- Responding to `@claude` mentions in issues and PR comments
+- Agent mode with `@claude agent` for automated code changes
 
 ## Project Structure
 
