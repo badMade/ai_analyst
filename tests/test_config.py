@@ -7,8 +7,6 @@ Tests settings loading, path sanitization, and logging setup.
 import logging
 from pathlib import Path
 
-import pytest
-
 from ai_analyst.utils.config import Settings, get_settings, sanitize_path, setup_logging
 
 
