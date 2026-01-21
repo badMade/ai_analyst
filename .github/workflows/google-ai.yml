@@ -69,6 +69,7 @@ jobs:
           PR_BODY: ${{ github.event.pull_request.body }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           HEAD_REF: ${{ github.head_ref }}
+          GITHUB_BASE_REF: ${{ github.base_ref }}
         run: |
           python .github/scripts/gemini_code_assist.py
 
