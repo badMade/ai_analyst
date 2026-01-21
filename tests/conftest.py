@@ -4,7 +4,6 @@ Pytest configuration and shared fixtures.
 Provides mocks for external dependencies and sample data fixtures.
 """
 
-import os
 import tempfile
 from pathlib import Path
 from typing import Any
