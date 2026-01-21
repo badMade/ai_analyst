@@ -48,8 +48,16 @@ jobs:
             const repo = context.repo.repo;
 
             // Skip deletion for protected branch patterns
-            const protectedPatterns = ['main', 'master', 'develop', 'release'];
-            if (protectedPatterns.some(pattern => branch === pattern || branch.startsWith(`${pattern}/`))) {
+            // Protected patterns include:
+            // - Exact matches: main, master, develop
+            // - Prefix matches: release/*, releases/*, hotfix/*
+            const protectedPatterns = ['main', 'master', 'develop'];
+            const protectedPrefixes = ['release/', 'releases/', 'hotfix/'];
+            
+            const isProtected = protectedPatterns.includes(branch) || 
+                                protectedPrefixes.some(prefix => branch.startsWith(prefix));
+            
+            if (isProtected) {
               console.log(`Skipping deletion of protected branch: ${branch}`);
               return;
             }
@@ -62,22 +70,20 @@ jobs:
               });
               console.log(`Successfully deleted branch: ${branch}`);
             } catch (error) {
+              // Handle specific error scenarios
               if (error.status === 422) {
-                console.log(`Branch ${branch} was already deleted`);
+                // 422 can mean branch doesn't exist or is protected
+                const errorMsg = error.message || '';
+                if (errorMsg.includes('Reference does not exist')) {
+                  console.log(`Branch ${branch} was already deleted`);
+                } else {
+                  console.log(`Unable to delete branch ${branch}: ${errorMsg}`);
+                }
+              } else if (error.status === 404) {
+                console.log(`Branch ${branch} not found (already deleted)`);
               } else {
                 throw error;
               }
             }
 
-  # Log merge activity
-  log-merge:
-    name: Log Merge Activity
-    runs-on: ubuntu-latest
-    if: github.event.pull_request.merged == true
-    steps:
-      - name: Log merge details
-        run: |
-          echo "PR #${{ github.event.pull_request.number }} was merged"
-          echo "Branch: ${{ github.event.pull_request.head.ref }}"
-          echo "Merged by: ${{ github.event.pull_request.merged_by.login }}"
-          echo "Merge commit: ${{ github.event.pull_request.merge_commit_sha }}"
+
