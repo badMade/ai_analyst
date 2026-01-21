@@ -83,12 +83,16 @@ def main():
     gh = Github(gh_token)
     repo = gh.get_repo(os.environ.get("GITHUB_REPOSITORY"))
 
-    pr_number = os.environ.get("PR_NUMBER")
-    if not pr_number:
+    pr_number_str = os.environ.get("PR_NUMBER")
+    if not pr_number_str:
         print("PR_NUMBER not set")
         return
 
-    pr = repo.get_pull(int(pr_number))
+    try:
+        pr = repo.get_pull(int(pr_number_str))
+    except ValueError:
+        print(f"PR_NUMBER '{pr_number_str}' is not a valid integer.")
+        return
 
     # Get branch info
     head_ref = os.environ.get("HEAD_REF", pr.head.ref)
