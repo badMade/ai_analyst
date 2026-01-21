@@ -43,9 +43,11 @@ def get_changed_files() -> list[str]:
             capture_output=True,
             text=True,
             check=True,
+            timeout=60,
         )
         return [f for f in result.stdout.strip().split("\n") if f]
-    except subprocess.CalledProcessError:
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+        print(f"Error getting changed files: {e}")
         return []
 
 
