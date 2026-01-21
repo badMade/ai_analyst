@@ -37,6 +37,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           trigger_phrase: "@claude"
           model: "claude-sonnet-4-20250514"
+          allowed_bots: "Copilot"
 
   claude-agent:
     if: |
