@@ -133,7 +133,7 @@ class TestAnalyzeMethod:
             load_response, preview_response, end_response
         ]
 
-        result = mock_analyst.analyze("Load and preview data")
+        mock_analyst.analyze("Load and preview data")
 
         assert mock_analyst.client.messages.create.call_count == 3
 
