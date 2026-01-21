@@ -45,11 +45,12 @@ from ai_analyst.utils.config import Config
 ### Claude API Usage
 ```python
 # Preferred pattern for Claude API calls
-client = Anthropic()
+client = Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 response = client.messages.create(
     model=os.getenv("AI_ANALYST_MODEL", "claude-3.5-sonnet-20240620"),
+    system="You are AI Analyst, a Python-based data analysis assistant.",
     max_tokens=4096,
-    messages=[{"role": "user", "content": prompt}]
+    messages=[{"role": "user", "content": prompt}],
 )
 ```
 
