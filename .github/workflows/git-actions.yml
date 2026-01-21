@@ -1,4 +1,4 @@
-name: Git Actions
+name: PR Validation and Post-Merge Cleanup
 
 on:
   pull_request:
