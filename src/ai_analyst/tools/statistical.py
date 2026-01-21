@@ -10,7 +10,7 @@ def compute_descriptive_stats(series):
         "max": series.max()
     }
 
-def test_normality(series):
+def check_normality(series):
     return TestResult("Shapiro-Wilk", 0.99, 0.5, False, "Normal")
 
 def test_correlation_significance(x, y):

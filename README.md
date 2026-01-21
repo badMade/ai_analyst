@@ -66,7 +66,7 @@ print(response)
 | `detect_outliers` | IQR/Z-score outliers |
 | `group_analysis` | Grouped aggregations |
 | `check_data_quality` | Missing, duplicates, issues |
-| `test_normality` | Shapiro-Wilk test |
+| `check_normality` | Shapiro-Wilk test |
 | `analyze_trend` | Mann-Kendall trend detection |
 
 ## Configuration

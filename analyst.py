@@ -23,7 +23,7 @@ from pydantic import BaseModel
 
 from ai_analyst.tools.statistical import (
     compute_descriptive_stats,
-    test_normality,
+    check_normality,
     test_correlation_significance,
     detect_trend,
 )
@@ -242,7 +242,7 @@ TOOLS = [
         }
     },
     {
-        "name": "test_normality",
+        "name": "check_normality",
         "description": "Test if a column follows a normal distribution.",
         "input_schema": {
             "type": "object",
@@ -450,11 +450,11 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                     "quality_score": round(100 - (null_cells / total_cells * 50) - (duplicate_rows / len(df) * 50), 1)
                 }
             
-            elif tool_name == "test_normality":
+            elif tool_name == "check_normality":
                 df = self.context.get_dataset(tool_input["dataset_name"])
                 column = tool_input["column"]
                 
-                test_result = test_normality(df[column].dropna())
+                test_result = check_normality(df[column].dropna())
                 result = {
                     "column": column,
                     "test": test_result.test_name,
