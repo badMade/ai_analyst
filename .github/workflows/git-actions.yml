@@ -3,10 +3,6 @@ name: Git Actions
 on:
   pull_request:
     types: [opened, synchronize, reopened, closed]
-  push:
-    branches:
-      - main
-      - master
 
 permissions:
   contents: write
