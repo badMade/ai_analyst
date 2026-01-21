@@ -45,7 +45,7 @@
     "codespaces": {
       "openFiles": [
         "README.md",
-        "src/ai_analyst/analyst.py"
+        "analyst.py"
       ]
     }
   },
