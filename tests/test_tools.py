@@ -5,7 +5,6 @@ Each tool has its own test class covering valid inputs, edge cases, and errors.
 """
 
 import json
-import tempfile
 from pathlib import Path
 
 import numpy as np
