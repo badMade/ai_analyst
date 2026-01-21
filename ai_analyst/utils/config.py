@@ -50,12 +50,6 @@ def sanitize_path(file_path: str) -> Path:
     """
     path = Path(file_path).resolve()
 
-    # Check for path traversal attempts
-    path_str = str(path)
-    if ".." in file_path:
-        # Allow if resolved path doesn't escape intended directory
-        pass
-
     # Check against allowed paths if configured
     settings = get_settings()
     if settings.allowed_paths:
