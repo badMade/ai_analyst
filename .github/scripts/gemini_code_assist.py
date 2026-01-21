@@ -53,14 +53,15 @@ def get_changed_files() -> list[str]:
 
 def get_ai_assistant_name(head_ref: str) -> str:
     """Determine which AI assistant created the branch."""
-    if head_ref.startswith("claude/"):
-        return "Claude"
-    elif head_ref.startswith("codex/"):
-        return "OpenAI Codex"
-    elif head_ref.startswith("jules/"):
-        return "Google Jules"
-    elif head_ref.startswith("copilot/"):
-        return "GitHub Copilot"
+    assistant_map = {
+        "claude/": "Claude",
+        "codex/": "OpenAI Codex",
+        "jules/": "Google Jules",
+        "copilot/": "GitHub Copilot",
+    }
+    for prefix, name in assistant_map.items():
+        if head_ref.startswith(prefix):
+            return name
     return "AI Assistant"
 
 
