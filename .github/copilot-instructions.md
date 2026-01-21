@@ -152,13 +152,16 @@ def load_data(path: str | Path) -> pd.DataFrame:
     suffix = p.suffix.lower()
     if suffix == ".csv":
         df = pd.read_csv(p)
-    elif suffix == ".json":
-        df = pd.read_json(p)
-    else:
-        raise ValueError(f"Unsupported file format: {suffix}")
+from pathlib import Path
+import pandas as pd
+from ai_analyst.utils.config import sanitize_path
 
+def load_data(path: str | Path) -> pd.DataFrame:
+    """Load CSV data with validation."""
+    safe_path = sanitize_path(path)
+    df = pd.read_csv(safe_path)
     if df.empty:
-        raise ValueError(f"Empty dataset: {path}")
+        raise ValueError(f"Empty dataset: {safe_path}")
     return df
 ```
 
