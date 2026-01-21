@@ -81,6 +81,7 @@ def main():
         diff = diff[:max_diff_length] + "\n... (diff truncated)"
 
     # Build review prompt
+    file_list = '\n'.join(f'- {f}' for f in changed_files if f)
     prompt = f"""You are an expert code reviewer. Review this pull request and provide constructive feedback.
 
 ## Pull Request
@@ -88,7 +89,7 @@ def main():
 **Description:** {pr.body or 'No description provided'}
 
 ## Changed Files
-{chr(10).join(f'- {f}' for f in changed_files if f)}
+{file_list}
 
 ## Diff
 ```diff
