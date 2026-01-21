@@ -169,10 +169,14 @@ Focus on issues that AI assistants commonly miss, such as:
 
     except Exception as e:
         print(f"Error generating review: {e}")
-        pr.create_issue_comment(
+        error_comment = (
             f"@gemini-code-assist encountered an error reviewing this {ai_assistant}-created PR. "
             "Please check the workflow logs for details."
         )
+        try:
+            pr.create_issue_comment(error_comment)
+        except Exception as comment_error:
+            print(f"Failed to post error comment to PR: {comment_error}")
 
 
 if __name__ == "__main__":
