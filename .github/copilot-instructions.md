@@ -55,7 +55,7 @@ response = client.messages.create(
 
 ### DataFrame Operations
 - Prefer vectorized operations over iterrows()
-- Use `.copy()` when modifying DataFrames to avoid SettingWithCopyWarning
+- Use `.copy()` to create explicit copies of DataFrame slices, which avoids `SettingWithCopyWarning`.
 - Chain operations using method chaining where readable
 - Always validate data types before operations
 
