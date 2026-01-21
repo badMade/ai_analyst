@@ -111,13 +111,25 @@ def main():
     if len(diff) > max_diff_length:
         diff = diff[:max_diff_length] + "\n... (diff truncated)"
 
+    # Sanitize PR metadata to avoid excessively long or malformed inputs
+    max_title_length = 256
+    max_body_length = 4000
+
+    pr_title = (pr.title or "").strip()
+    if len(pr_title) > max_title_length:
+        pr_title = pr_title[:max_title_length] + "…"
+
+    pr_body = (pr.body or "No description provided").strip()
+    if len(pr_body) > max_body_length:
+        pr_body = pr_body[:max_body_length] + "\n… (description truncated)"
+
     # Build review prompt tailored for AI-generated code
     prompt = f"""You are Gemini Code Assist, an expert code reviewer. This pull request was created by {ai_assistant}.
 Review the AI-generated code changes and provide constructive feedback.
 
 ## Pull Request
-**Title:** {pr.title}
-**Description:** {pr.body or 'No description provided'}
+**Title:** {pr_title}
+**Description:** {pr_body}
 **Source Branch:** {head_ref}
 **Created by:** {ai_assistant}
 
