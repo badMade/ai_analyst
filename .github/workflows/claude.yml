@@ -1,4 +1,4 @@
-name: Claude Code
+name: Claude Code Assistant
 
 on:
   issue_comment:
@@ -7,17 +7,15 @@ on:
     types: [created]
   issues:
     types: [opened, edited]
-  pull_request:
-    types: [opened, synchronize, reopened]
   pull_request_review:
     types: [submitted]
 
 jobs:
-  claude-code-review:
+  claude-assistant:
+    name: Claude Assistant
     if: |
-      contains(github.event.pull_request.body, '@claude') ||
-      contains(github.event.review.body, '@claude') ||
       contains(github.event.comment.body, '@claude') ||
+      contains(github.event.review.body, '@claude') ||
       contains(github.event.issue.body, '@claude')
     runs-on: ubuntu-latest
     permissions:
@@ -39,6 +37,7 @@ jobs:
           model: "claude-sonnet-4-20250514"
 
   claude-agent:
+    name: Claude Agent
     if: |
       (
         contains(github.event.comment.body, '@claude agent') ||
