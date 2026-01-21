@@ -69,3 +69,4 @@ credentials.json
 *_secret*
 *.pem
 *.key
+__pycache__/
