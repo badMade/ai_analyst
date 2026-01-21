@@ -5,7 +5,6 @@ Tests settings loading, path sanitization, and logging setup.
 """
 
 import logging
-import os
 from pathlib import Path
 
 import pytest
