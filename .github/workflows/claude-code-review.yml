@@ -1,10 +1,11 @@
 name: Claude Code Review
 
+# This workflow is DISABLED - automatic PR reviews are handled by claude.yml
+# Keep this file for reference only
+
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-  issue_comment:
-    types: [created]
+  # Disabled - use claude.yml instead which has both @claude trigger and PR review
+  workflow_dispatch:  # Only manual trigger
 
 permissions:
   contents: read
@@ -13,11 +14,7 @@ permissions:
 
 jobs:
   claude-code-review:
-    if: >
-      github.event_name == 'pull_request' ||
-      (github.event_name == 'issue_comment' &&
-       github.event.issue.pull_request &&
-       contains(github.event.comment.body, '@claude'))
+    if: false  # Disabled - automatic PR reviews handled by claude.yml
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
