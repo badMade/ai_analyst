@@ -81,7 +81,11 @@ def main():
         return
 
     gh = Github(gh_token)
-    repo = gh.get_repo(os.environ.get("GITHUB_REPOSITORY"))
+    repo_name = os.environ.get("GITHUB_REPOSITORY")
+    if not repo_name:
+        print("GITHUB_REPOSITORY not set")
+        return
+    repo = gh.get_repo(repo_name)
 
     pr_number_str = os.environ.get("PR_NUMBER")
     if not pr_number_str:
