@@ -31,7 +31,6 @@
             "source.organizeImports.ruff": true
           }
         },
-        "ruff.organizeImports": true,
         "files.exclude": {
           "**/__pycache__": true,
           "**/*.pyc": true,
