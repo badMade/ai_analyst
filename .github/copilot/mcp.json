@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "fetch": {
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/mcp-server-fetch@0.1.2"],
+      "env": {}
+    },
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp@0.1.0"],
+      "env": {}
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/mcp-server-sequential-thinking@0.1.0"],
+      "env": {}
+    }
+  }
+}

@@ -8,8 +8,13 @@ Uses Claude API directly with tool definitions for a simpler standalone setup.
 import asyncio
 import json
 import logging
+import os
+import sys
 from pathlib import Path
 from typing import Any
+
+# Add src to path for running without install
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
 import pandas as pd
 import numpy as np
@@ -63,7 +68,7 @@ class AnalysisContext:
             "columns": len(df.columns),
             "column_names": df.columns.tolist(),
             "dtypes": {col: str(dtype) for col, dtype in df.dtypes.items()},
-            "null_counts": {col: int(df[col].isna().sum()) for col in df.columns}
+            "null_counts": df.isna().sum().to_dict()
         }
     
     def get_dataset(self, name: str) -> pd.DataFrame:
@@ -424,7 +429,7 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                 total_cells = df.size
                 null_cells = df.isna().sum().sum()
                 duplicate_rows = df.duplicated().sum()
-                
+
                 column_issues = {}
                 for col in df.columns:
                     issues = []
@@ -433,7 +438,7 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                         issues.append(f"Missing: {null_pct:.1f}%")
                     if issues:
                         column_issues[col] = issues
-                
+
                 result = {
                     "total_rows": len(df),
                     "total_columns": len(df.columns),

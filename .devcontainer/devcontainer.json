@@ -1,0 +1,66 @@
+{
+  "name": "AI Analyst Development",
+  "image": "mcr.microsoft.com/devcontainers/python:3.10",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "lts"
+    },
+    "ghcr.io/devcontainers/features/git:1": {}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+        "ms-toolsai.jupyter",
+        "GitHub.copilot",
+        "GitHub.copilot-chat",
+        "tamasfe.even-better-toml",
+        "redhat.vscode-yaml"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.testing.pytestEnabled": true,
+        "python.testing.pytestArgs": ["tests"],
+        "editor.formatOnSave": true,
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff",
+          "editor.codeActionsOnSave": {
+            "source.fixAll.ruff": true,
+            "source.organizeImports.ruff": true
+          }
+        },
+        "files.exclude": {
+          "**/__pycache__": true,
+          "**/*.pyc": true,
+          "**/.pytest_cache": true,
+          "**/.ruff_cache": true,
+          "**/.mypy_cache": true,
+          "**/*.egg-info": true
+        }
+      }
+    },
+    "codespaces": {
+      "openFiles": [
+        "README.md",
+        "analyst.py"
+      ]
+    }
+  },
+  "postCreateCommand": "pip install -e '.[dev,mcp,viz,notebook]'",
+  "containerEnv": {
+    "PYTHONPATH": "${containerWorkspaceFolder}/src",
+    "AI_ANALYST_LOG_LEVEL": "DEBUG"
+  },
+  "remoteEnv": {
+    "ANTHROPIC_API_KEY": "${localEnv:ANTHROPIC_API_KEY}"
+  },
+  "forwardPorts": [8888],
+  "portsAttributes": {
+    "8888": {
+      "label": "Jupyter Notebook",
+      "onAutoForward": "notify"
+    }
+  }
+}
