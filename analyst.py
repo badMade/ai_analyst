@@ -44,7 +44,14 @@ class AnalysisContext:
         suffix = path.suffix.lower()
         
         if suffix == ".csv":
-            df = pd.read_csv(path, engine="pyarrow")
+            try:
+                df = pd.read_csv(path, engine="pyarrow")
+            except ImportError as exc:
+                logger.warning(
+                    "pyarrow CSV engine not available, falling back to default pandas engine: %s",
+                    exc,
+                )
+                df = pd.read_csv(path)
         elif suffix == ".json":
             df = pd.read_json(path)
         elif suffix in [".xlsx", ".xls"]:
