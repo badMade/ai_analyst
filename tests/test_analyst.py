@@ -1,6 +1,5 @@
 import pytest
 from unittest.mock import patch
-import pandas as pd
 from analyst import AnalysisContext
 from ai_analyst.utils.config import sanitize_path
 
