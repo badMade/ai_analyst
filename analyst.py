@@ -430,25 +430,32 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                 column_issues = {}
                 total_rows = len(df)
 
-                for col in df.columns:
-                    issues = []
-                    # Reuse calculated value instead of calling df[col].isna().sum()
-                    null_count = null_counts[col]
-                    if null_count > 0:
-                        null_pct = (null_count / total_rows) * 100
-                        issues.append(f"Missing: {null_pct:.1f}%")
-                    if issues:
-                        column_issues[col] = issues
+                # Only process column issues if DataFrame has rows
+                if total_rows > 0:
+                    for col in df.columns:
+                        issues = []
+                        # Reuse calculated value instead of calling df[col].isna().sum()
+                        null_count = null_counts[col]
+                        if null_count > 0:
+                            null_pct = (null_count / total_rows) * 100
+                            issues.append(f"Missing: {null_pct:.1f}%")
+                        if issues:
+                            column_issues[col] = issues
+                
+                # Avoid division by zero for empty DataFrames
+                null_percentage = round(null_cells / total_cells * 100, 2) if total_cells > 0 else 0.0
+                duplicate_percentage = round(duplicate_rows / total_rows * 100, 2) if total_rows > 0 else 0.0
+                quality_score = round(100 - (null_cells / total_cells * 50) - (duplicate_rows / total_rows * 50), 1) if total_cells > 0 and total_rows > 0 else 100.0
                 
                 result = {
-                    "total_rows": len(df),
+                    "total_rows": total_rows,
                     "total_columns": len(df.columns),
                     "null_cells": int(null_cells),
-                    "null_percentage": round(null_cells / total_cells * 100, 2),
+                    "null_percentage": null_percentage,
                     "duplicate_rows": int(duplicate_rows),
-                    "duplicate_percentage": round(duplicate_rows / len(df) * 100, 2),
+                    "duplicate_percentage": duplicate_percentage,
                     "column_issues": column_issues,
-                    "quality_score": round(100 - (null_cells / total_cells * 50) - (duplicate_rows / len(df) * 50), 1)
+                    "quality_score": quality_score
                 }
             
             elif tool_name == "test_normality":
