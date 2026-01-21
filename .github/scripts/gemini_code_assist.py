@@ -122,7 +122,7 @@ Review the AI-generated code changes and provide constructive feedback.
 **Created by:** {ai_assistant}
 
 ## Changed Files
-{chr(10).join(f'- {f}' for f in changed_files if f)}
+{'\n'.join(f'- {f}' for f in changed_files if f)}
 
 ## Diff
 ```diff
