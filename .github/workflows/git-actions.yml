@@ -2,7 +2,7 @@ name: Git Actions
 
 on:
   pull_request:
-    types: [closed]
+    types: [opened, synchronize, reopened, closed]
   push:
     branches:
       - main
@@ -12,6 +12,31 @@ permissions:
   contents: write
 
 jobs:
+  # Validate PR - runs on open/sync/reopen
+  validate-pr:
+    name: Validate PR
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.action != 'closed'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate branch name
+        run: |
+          BRANCH="${{ github.head_ref }}"
+          echo "Validating branch: $BRANCH"
+          if [[ -z "$BRANCH" ]]; then
+            echo "Error: Branch name is empty"
+            exit 1
+          fi
+          echo "Branch name is valid"
+
+      - name: PR info
+        run: |
+          echo "PR #${{ github.event.pull_request.number }}"
+          echo "Branch: ${{ github.head_ref }}"
+          echo "Target: ${{ github.base_ref }}"
+
   # Auto-delete branches after PR merge
   auto-delete-branch:
     name: Auto Delete Merged Branch
