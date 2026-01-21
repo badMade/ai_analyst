@@ -63,7 +63,7 @@ class AnalysisContext:
             "columns": len(df.columns),
             "column_names": df.columns.tolist(),
             "dtypes": {col: str(dtype) for col, dtype in df.dtypes.items()},
-            "null_counts": df.isna().sum().to_dict()
+            "null_counts": {col: int(count) for col, count in df.isna().sum().items()}
         }
     
     def get_dataset(self, name: str) -> pd.DataFrame:
@@ -320,12 +320,16 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                 columns = tool_input.get("columns")
                 
                 if columns:
-                    df = df[columns]
+                    preview_df = df.head(n_rows)[columns]
+                    column_names = columns
+                else:
+                    preview_df = df.head(n_rows)
+                    column_names = df.columns.tolist()
                 
                 result = {
-                    "data": df.head(n_rows).to_dict(orient="records"),
+                    "data": preview_df.to_dict(orient="records"),
                     "total_rows": len(df),
-                    "columns": df.columns.tolist()
+                    "columns": column_names
                 }
             
             elif tool_name == "describe_statistics":
@@ -357,18 +361,15 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                 numeric_df = df.select_dtypes(include=[np.number])
                 corr_matrix = numeric_df.corr(method=method)
                 
-                correlations = []
-                cols = corr_matrix.columns.tolist()
-                for i, col_a in enumerate(cols):
-                    for col_b in cols[i+1:]:
-                        corr = corr_matrix.loc[col_a, col_b]
-                        if pd.notna(corr):
-                            correlations.append({
-                                "column_a": col_a,
-                                "column_b": col_b,
-                                "correlation": round(corr, 4)
-                            })
+                # Optimized implementation using vectorization
+                mask = np.triu(np.ones(corr_matrix.shape, dtype=bool), k=1)
+                stacked = corr_matrix.where(mask).stack()
                 
+                df_corr = stacked.reset_index()
+                df_corr.columns = ['column_a', 'column_b', 'correlation']
+                df_corr['correlation'] = df_corr['correlation'].round(4)
+
+                correlations = df_corr.to_dict('records')
                 correlations.sort(key=lambda x: abs(x["correlation"]), reverse=True)
                 result = {"correlations": correlations, "method": method}
             
@@ -421,28 +422,33 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
             elif tool_name == "check_data_quality":
                 df = self.context.get_dataset(tool_input["dataset_name"])
                 
+                total_rows = len(df)
                 total_cells = df.size
-                null_cells = df.isna().sum().sum()
+                null_counts = df.isna().sum()
+                null_cells = null_counts.sum()
                 duplicate_rows = df.duplicated().sum()
-                
+
                 column_issues = {}
-                for col in df.columns:
-                    issues = []
-                    null_pct = df[col].isna().sum() / len(df) * 100
-                    if null_pct > 0:
-                        issues.append(f"Missing: {null_pct:.1f}%")
-                    if issues:
-                        column_issues[col] = issues
-                
+                if total_rows > 0:
+                    column_issues = {
+                        col: [f"Missing: {count / total_rows * 100:.1f}%"]
+                        for col, count in null_counts.items() if count > 0
+                    }
+
                 result = {
-                    "total_rows": len(df),
+                    "total_rows": total_rows,
                     "total_columns": len(df.columns),
                     "null_cells": int(null_cells),
-                    "null_percentage": round(null_cells / total_cells * 100, 2),
+                    "null_percentage": round(null_cells / total_cells * 100, 2) if total_cells > 0 else 0,
                     "duplicate_rows": int(duplicate_rows),
-                    "duplicate_percentage": round(duplicate_rows / len(df) * 100, 2),
+                    "duplicate_percentage": round(duplicate_rows / total_rows * 100, 2) if total_rows > 0 else 0,
                     "column_issues": column_issues,
-                    "quality_score": round(100 - (null_cells / total_cells * 50) - (duplicate_rows / len(df) * 50), 1)
+                    "quality_score": round(
+                        100
+                        - (null_cells / total_cells * 50 if total_cells > 0 else 0)
+                        - (duplicate_rows / total_rows * 50 if total_rows > 0 else 0),
+                        1,
+                    ),
                 }
             
             elif tool_name == "test_normality":
