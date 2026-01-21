@@ -141,10 +141,22 @@ config = Config.from_env()
 ### Data Loading
 ```python
 import pandas as pd
+from pathlib import Path
 
 def load_data(path: str | Path) -> pd.DataFrame:
-    """Load CSV data with validation."""
-    df = pd.read_csv(path)
+    """Load data from various file formats (e.g., CSV, JSON) with validation."""
+    p = Path(path)
+    if not p.exists():
+        raise FileNotFoundError(f"File not found: {p}")
+
+    suffix = p.suffix.lower()
+    if suffix == ".csv":
+        df = pd.read_csv(p)
+    elif suffix == ".json":
+        df = pd.read_json(p)
+    else:
+        raise ValueError(f"Unsupported file format: {suffix}")
+
     if df.empty:
         raise ValueError(f"Empty dataset: {path}")
     return df
