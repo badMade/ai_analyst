@@ -13,24 +13,6 @@ on:
     types: [submitted]
 
 jobs:
-  # Gemini Code Assist - Automated Code Review (DISABLED)
-  # NOTE: The gemini-code-assist-action has been deprecated/removed by Google.
-  # This job is permanently disabled and Gemini Code Assist no longer provides automatic PR reviews.
-  # See: https://github.com/google-github-actions for available actions and potential replacements.
-  gemini-code-review:
-    name: Gemini Code Assist Review
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
-    steps:
-      - name: Gemini Code Assist Status
-        run: |
-          echo "::notice::Gemini Code Assist action is not available - google-github-actions/gemini-code-assist-action has been deprecated."
-          echo "See: https://github.com/google-github-actions for available actions and potential replacements."
-          echo "PR reviews are handled by the combined-ai-review job using Gemini AI Studio API."
-
   # Google Labs Jules - AI Coding Agent
   jules-agent:
     name: Jules AI Agent

@@ -60,7 +60,8 @@ def write_file_content(file_path: str, content: str) -> bool:
         with open(target_path, "w") as f:
             f.write(content)
         return True
-    except Exception:
+    except Exception as e:
+        print(f"Error writing file {file_path}: {e}")
         return False
 
 
@@ -235,10 +236,9 @@ Analyze the request and provide changes if needed."""
         print("Codex Agent completed successfully")
 
     except Exception as e:
+        error_msg = f"Codex Agent encountered an error: {str(e)}"
+        issue_or_pr.create_comment(error_msg)
         print(f"Error: {e}")
-        issue_or_pr.create_comment(
-            "Codex Agent encountered an error. Please check the workflow logs for details."
-        )
 
 
 if __name__ == "__main__":
