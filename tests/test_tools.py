@@ -6,7 +6,6 @@ Each tool has its own test class covering valid inputs, edge cases, and errors.
 
 import json
 
-import numpy as np
 import pandas as pd
 import pytest
 
