@@ -95,9 +95,10 @@ Format your response in GitHub-flavored markdown."""
         print("Response posted successfully")
 
     except Exception as e:
-        error_msg = f"Gemini encountered an error: {str(e)}"
-        issue_or_pr.create_comment(error_msg)
         print(f"Error: {e}")
+        issue_or_pr.create_comment(
+            "Gemini encountered an error. Please check the workflow logs for details."
+        )
 
 
 if __name__ == "__main__":

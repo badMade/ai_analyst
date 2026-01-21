@@ -135,7 +135,7 @@ Provide a thorough review covering:
     except Exception as e:
         print(f"Error generating review: {e}")
         pr.create_issue_comment(
-            f"ChatGPT Code Review encountered an error: {str(e)}"
+            "ChatGPT Code Review encountered an error. Please check the workflow logs for details."
         )
 
 
