@@ -44,7 +44,7 @@ class AnalysisContext:
         suffix = path.suffix.lower()
         
         if suffix == ".csv":
-            df = pd.read_csv(path)
+            df = pd.read_csv(path, engine="pyarrow")
         elif suffix == ".json":
             df = pd.read_json(path)
         elif suffix in [".xlsx", ".xls"]:
