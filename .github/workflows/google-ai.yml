@@ -13,12 +13,12 @@ on:
     types: [submitted]
 
 jobs:
-  # Gemini Code Assist - Automated Code Review
+  # Gemini Code Assist - Automated Code Review (DISABLED)
   # NOTE: The gemini-code-assist-action has been deprecated/removed by Google.
-  # This job is disabled until a replacement is available.
-  # See: https://github.com/google-github-actions for available actions
+  # This job is permanently disabled and Gemini Code Assist no longer provides automatic PR reviews.
+  # See: https://github.com/google-github-actions for available actions and potential replacements.
   gemini-code-review:
-    name: Gemini Code Assist Review
+    name: Gemini Code Assist Review (Disabled)
     if: false  # Disabled - google-github-actions/gemini-code-assist-action no longer exists
     runs-on: ubuntu-latest
     permissions:
