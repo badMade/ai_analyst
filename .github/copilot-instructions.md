@@ -134,9 +134,9 @@ When reviewing pull requests, verify:
 
 ### Configuration Loading
 ```python
-from ai_analyst.utils.config import Config
+from ai_analyst.utils.config import get_settings
 
-config = Config.from_env()
+settings = get_settings()
 ```
 
 ### Data Loading
