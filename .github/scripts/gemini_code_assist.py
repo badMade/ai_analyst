@@ -163,8 +163,19 @@ Focus on issues that AI assistants commonly miss, such as:
     try:
         # Generate review
         response = model.generate_content(prompt)
-        review_text = response.text
+        review_text = getattr(response, "text", None)
 
+        # Validate generated review content before posting
+        if review_text is None or not str(review_text).strip():
+            fallback_message = (
+                f"@gemini-code-assist was unable to generate a review for this {ai_assistant}-created PR "
+                "because the model returned no usable content. This can happen due to rate limiting, "
+                "temporary service issues, or safety filters blocking the response. "
+                "Please try rerunning the workflow or perform a manual review."
+            )
+            pr.create_issue_comment(fallback_message)
+            print("Gemini Code Assist could not generate review: empty or missing response.text")
+            return
         # Post review comment
         review_body = f"""## @gemini-code-assist Review
 
