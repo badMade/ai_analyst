@@ -60,7 +60,8 @@ def write_file_content(file_path: str, content: str) -> bool:
         with open(target_path, "w") as f:
             f.write(content)
         return True
-    except Exception:
+    except Exception as e:
+        print(f"Error writing file {file_path}: {e}")
         return False
 
 
