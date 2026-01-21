@@ -4,7 +4,6 @@ Tests for interactive REPL module.
 Tests command parsing, file loading, and error handling.
 """
 
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
