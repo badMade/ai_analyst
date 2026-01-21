@@ -215,7 +215,7 @@ Analyze the request and provide changes if needed."""
         print("Codex Agent completed successfully")
 
     except Exception as e:
-        error_msg = f"Codex Agent encountered an error: {str(e)}"
+        error_msg = "Codex Agent encountered an error. Please check the workflow logs for details."
         issue_or_pr.create_comment(error_msg)
         print(f"Error: {e}")
 
