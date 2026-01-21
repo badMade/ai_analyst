@@ -13,20 +13,64 @@ on:
     types: [submitted]
 
 jobs:
-  # Gemini Code Assist - Automated Code Review (DISABLED)
-  # NOTE: The gemini-code-assist-action has been deprecated/removed by Google.
-  # This job is permanently disabled and Gemini Code Assist no longer provides automatic PR reviews.
-  # See: https://github.com/google-github-actions for available actions and potential replacements.
-  gemini-code-review:
-    name: Gemini Code Assist Review (Disabled)
-    if: false  # Disabled - google-github-actions/gemini-code-assist-action no longer exists
+  # Gemini Code Assist - Automated Code Review for AI-created branches
+  # Triggers on PRs from branches created by AI assistants (claude/, codex/, jules/, copilot/)
+  gemini-code-assist:
+    name: Gemini Code Assist Review
+    if: |
+      github.event_name == 'pull_request' && (
+        startsWith(github.head_ref, 'claude/') ||
+        startsWith(github.head_ref, 'codex/') ||
+        startsWith(github.head_ref, 'jules/') ||
+        startsWith(github.head_ref, 'copilot/')
+      )
     runs-on: ubuntu-latest
     permissions:
       contents: read
       pull-requests: write
     steps:
-      - name: Placeholder
-        run: echo "Gemini Code Assist action is not available"
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get PR diff
+        id: diff
+        run: |
+          # Attempt to fetch the base ref; do not fail if it doesn't exist
+          git fetch origin "${{ github.base_ref }}" || echo "Warning: could not fetch origin/${{ github.base_ref }}."
+
+          # Prefer diffing against the base ref if it exists
+          if git rev-parse --verify "origin/${{ github.base_ref }}" >/dev/null 2>&1; then
+            echo "Generating diff against origin/${{ github.base_ref }}..."
+            git diff "origin/${{ github.base_ref }}"...HEAD > /tmp/pr_diff.txt || echo "" > /tmp/pr_diff.txt
+          elif git rev-parse --verify HEAD~1 >/dev/null 2>&1; then
+            echo "Base ref not found; generating diff against HEAD~1..."
+            git diff HEAD~1...HEAD > /tmp/pr_diff.txt || echo "" > /tmp/pr_diff.txt
+          else
+            echo "No base ref and no previous commit; creating empty diff file."
+            : > /tmp/pr_diff.txt
+          fi
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install google-generativeai PyGithub
+
+      - name: Gemini Code Assist Review
+        env:
+          GOOGLE_AI_API_KEY: ${{ secrets.GOOGLE_AI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          python .github/scripts/gemini_code_assist.py
 
   # Google Labs Jules - AI Coding Agent
   jules-agent:
