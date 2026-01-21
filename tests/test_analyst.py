@@ -1,13 +1,15 @@
 import pytest
+from pathlib import Path
 from unittest.mock import patch
+import pandas as pd
 from analyst import AnalysisContext
 from ai_analyst.utils.config import sanitize_path
 
 @pytest.fixture
-def analysis_context():
+def analysis_context() -> AnalysisContext:
     return AnalysisContext()
 
-def test_load_csv_with_pyarrow(analysis_context, tmp_path) -> None:
+def test_load_csv_with_pyarrow(analysis_context: AnalysisContext, tmp_path: Path) -> None:
     csv_file = tmp_path / "test.csv"
     csv_file.write_text("a,b,c\n1,2,3")
 
