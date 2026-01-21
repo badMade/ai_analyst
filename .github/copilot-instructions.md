@@ -180,5 +180,5 @@ console.print("[green]Success![/green]")
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `ANTHROPIC_API_KEY` | Yes | Claude API authentication |
-| `AI_ANALYST_MODEL` | No | Model ID (default: claude-3.5-sonnet-20240620) |
+| `AI_ANALYST_MODEL` | No | Model ID (default: claude-sonnet-4-20250514) |
 | `AI_ANALYST_LOG_LEVEL` | No | Logging verbosity (DEBUG, INFO, WARNING, ERROR) |
