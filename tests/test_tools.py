@@ -469,11 +469,14 @@ class TestToolExceptionHandling:
         """Tool exceptions are logged."""
         import logging
 
-        with caplog.at_level(logging.ERROR):
+        # Capture all log messages at DEBUG and above so we don't depend on the exact log level.
+        with caplog.at_level(logging.DEBUG):
             mock_analyst._execute_tool("preview_data", {
                 "dataset_name": "nonexistent"
             })
 
         # Exception should be logged
-        assert any("Tool execution error" in record.message or "error" in record.message.lower()
-                   for record in caplog.records) or True  # Logging might be at different level
+        assert any(
+            "Tool execution error" in record.message or "error" in record.message.lower()
+            for record in caplog.records
+        )
