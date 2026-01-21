@@ -1,0 +1,152 @@
+name: OpenAI ChatGPT Codex Integration
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  issues:
+    types: [opened, edited]
+  pull_request:
+    types: [opened, synchronize, reopened]
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  # ChatGPT/Codex Code Review
+  chatgpt-code-review:
+    name: ChatGPT Codex Review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install openai PyGithub
+
+      - name: Get PR diff
+        id: diff
+        run: |
+          # Attempt to fetch the base ref; do not fail the job if it doesn't exist
+          git fetch origin "${{ github.base_ref }}" || echo "Warning: could not fetch origin/${{ github.base_ref }}."
+
+          # Prefer diffing against the base ref if it exists
+          if git rev-parse --verify "origin/${{ github.base_ref }}" >/dev/null 2>&1; then
+            echo "Generating diff against origin/${{ github.base_ref }}..."
+            git diff "origin/${{ github.base_ref }}"...HEAD > /tmp/pr_diff.txt || echo "" > /tmp/pr_diff.txt
+          # Fallback: if there is a previous commit, diff against HEAD~1
+          elif git rev-parse --verify HEAD~1 >/dev/null 2>&1; then
+            echo "Base ref not found; generating diff against HEAD~1..."
+            git diff HEAD~1...HEAD > /tmp/pr_diff.txt || echo "" > /tmp/pr_diff.txt
+          else
+            # No base ref and no previous commit; create an empty diff file
+            echo "No base ref and no previous commit; creating empty diff file."
+            : > /tmp/pr_diff.txt
+          fi
+      - name: ChatGPT Code Review
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          python .github/scripts/chatgpt_pr_review.py
+
+  # ChatGPT Assistant (@chatgpt trigger)
+  chatgpt-assistant:
+    name: ChatGPT Assistant
+    if: |
+      contains(github.event.comment.body, '@chatgpt') ||
+      contains(github.event.comment.body, '@codex') ||
+      contains(github.event.issue.body, '@chatgpt') ||
+      contains(github.event.issue.body, '@codex')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install openai PyGithub
+
+      - name: Run ChatGPT Assistant
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          python .github/scripts/chatgpt_assistant.py
+
+  # OpenAI Codex Agent (@codex-agent trigger)
+  codex-agent:
+    name: Codex Agent
+    if: |
+      (
+        github.event_name == 'issue_comment' &&
+        contains(github.event.comment.body, '@codex-agent') &&
+        (
+          github.event.comment.author_association == 'OWNER' ||
+          github.event.comment.author_association == 'MEMBER' ||
+          github.event.comment.author_association == 'COLLABORATOR'
+        )
+      ) ||
+      (
+        github.event_name == 'issues' &&
+        contains(github.event.issue.body, '@codex-agent') &&
+        (
+          github.event.issue.author_association == 'OWNER' ||
+          github.event.issue.author_association == 'MEMBER' ||
+          github.event.issue.author_association == 'COLLABORATOR'
+        )
+      )
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install openai PyGithub gitpython
+
+      - name: Run Codex Agent
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          python .github/scripts/codex_agent.py

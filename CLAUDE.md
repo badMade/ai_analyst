@@ -1,92 +1,81 @@
-# CLAUDE.md - AI Analyst Project Guide
+# Claude Code Instructions
+
+This repository contains an AI-powered data analyst tool built with the Anthropic Claude API.
 
 ## Project Overview
 
-AI Analyst is a standalone Python AI-powered data analyst that uses the Anthropic Claude API with agentic tool use. It enables automated data analysis and insights generation through an agentic loop pattern.
+AI Analyst is a Python-based tool that leverages Claude for intelligent data analysis. It provides:
+- Interactive REPL mode for data exploration
+- Automated data analysis and insights
+- CSV/DataFrame processing capabilities
+
+## Repository Structure
+
+ai-analyst/
+├── run.py                  # Standalone runner
+├── src/ai_analyst/
+│   ├── analyst.py          # Core standalone analyst
+│   ├── cli.py              # Click CLI
+│   ├── interactive.py      # REPL mode
+│   ├── tools/statistical.py
+│   └── utils/config.py
+├── data/sample_sales.csv
+└── pyproject.toml
+
+## Development Guidelines
+
+### Code Style
+- Use Python 3.10+ features
+- Follow PEP 8 style guidelines
+- Use type hints for function signatures
+- Keep functions focused and well-documented
+
+### Dependencies
+- Core: `anthropic`, `pandas`, `numpy`, `scipy`
+- CLI: `click`, `rich`, `pydantic`
+- Optional: `matplotlib`, `scikit-learn` for visualization and ML
+
+### Environment Variables
+- `ANTHROPIC_API_KEY` - Required for Claude API access
+- `AI_ANALYST_MODEL` - Model to use (default: claude-3.5-sonnet-20240620)
+- `AI_ANALYST_LOG_LEVEL` - Logging verbosity
+
+### Testing
+- Run tests with `pytest`
+- Ensure code coverage for new features
+- Test both CLI and programmatic interfaces
 
 ## Key Files
 
-- `analyst.py` - Core engine with `StandaloneAnalyst` class and tool definitions (agentic loop, max 15 iterations)
-- `interactive.py` - Interactive REPL mode for exploratory data analysis
-- `run.py` - CLI entry point
-- `src/ai_analyst/tools/statistical.py` - Statistical analysis functions
-- `src/ai_analyst/utils/config.py` - Configuration and path sanitization
+- **analyst.py**: Contains the main `AIAnalyst` class that handles data loading, Claude API interactions, and analysis generation
+- **interactive.py**: Implements the REPL interface for interactive data exploration
+- **run.py**: CLI entry point using Click framework
 
-## Architecture
+## PR Review Guidelines
 
-```
-User Query → Claude API + Tools → Tool Execution → Results → Claude Interpretation → Repeat → Final Response
-```
+When reviewing PRs:
+1. Check for proper error handling
+2. Verify API key and sensitive data are not exposed
+3. Ensure pandas operations are memory-efficient
+4. Validate Claude API usage follows best practices
 
-The analyst uses 10 built-in tools: `load_dataset`, `list_datasets`, `preview_data`, `describe_statistics`, `compute_correlation`, `detect_outliers`, `group_analysis`, `check_data_quality`, `test_normality`, `analyze_trend`
+## AI Integration
 
-## Development Commands
+This repository integrates multiple AI assistants:
 
-```bash
-# Run analysis
-python run.py analyze data.csv -q "What are the trends?"
+### Claude Code (Anthropic)
+- `@claude` - General assistance and code review
+- `@claude agent` - Automated code changes
 
-# Interactive REPL
-python run.py interactive data.csv
+### Google AI
+- `@gemini` - Gemini AI Studio assistance
+- `@jules` - Google Labs Jules coding agent
+- **Gemini Code Assist** - Automatic PR reviews
 
-# Inspect data
-python run.py inspect data.csv
+### OpenAI ChatGPT/Codex
+- `@chatgpt` - ChatGPT GPT-4o assistance
+- `@codex` - Code-focused help
+- `@codex-agent` - Automated code changes
+- **ChatGPT Codex Review** - Automatic PR reviews
 
-# Install dependencies
-pip install -e ".[dev]"
-
-# Run tests
-pytest
-
-# Linting
-ruff check .
-ruff format .
-
-# Type checking
-mypy .
-```
-
-## Code Style
-
-- Python 3.10+ (uses `|` union types, `match` statements)
-- Line length: 100 characters
-- Use `ruff` for linting and formatting
-- Strict type hints with `mypy`
-- Pydantic for data validation
-
-## Adding New Analysis Tools
-
-1. Define tool schema in `TOOLS` array in `analyst.py`
-2. Implement handler in `_execute_tool()` method
-3. Add statistical functions to `src/ai_analyst/tools/statistical.py` if needed
-
-## Environment Variables
-
-- `ANTHROPIC_API_KEY` - Required for Claude API access
-- `AI_ANALYST_MODEL` - Model to use (default: claude-sonnet-4-20250514)
-- `AI_ANALYST_LOG_LEVEL` - Logging level (default: INFO)
-
-## Security Guidelines
-
-- Never hardcode API keys; use environment variables
-- Use `sanitize_path()` from `utils/config.py` for file paths
-- Validate all user inputs before processing
-- No `eval()` or `exec()` on user data
-- Use specific exception handling (no bare `except:`)
-
-## Testing
-
-- Use pytest with `pytest-asyncio` for async tests
-- Mock Claude API calls in tests
-- Test DataFrame operations with sample data
-- Coverage reports via `pytest-cov`
-
-## Dependencies
-
-Core: `anthropic`, `pandas`, `numpy`, `scipy`, `pydantic`, `click`, `rich`
-
-Optional groups:
-- `[mcp]` - MCP framework integration
-- `[viz]` - matplotlib, seaborn, plotly
-- `[ml]` - scikit-learn
-- `[dev]` - testing and linting tools
+All PRs receive automated reviews from Claude, Gemini, and ChatGPT.
