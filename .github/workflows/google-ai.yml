@@ -97,9 +97,9 @@ jobs:
         run: |
           python .github/scripts/gemini_assistant.py
 
-  # Multi-AI Combined Review (Gemini + Analysis)
-  combined-ai-review:
-    name: Combined AI Review
+  # Gemini Code Assist - Automated PR reviews
+  gemini-code-assist-review:
+    name: Gemini Code Assist Review
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     permissions:
