@@ -23,8 +23,8 @@ from pydantic import BaseModel
 
 from ai_analyst.tools.statistical import (
     compute_descriptive_stats,
-    test_normality,
-    test_correlation_significance,
+    check_normality,
+    check_correlation_significance,
     detect_trend,
 )
 from ai_analyst.utils.config import get_settings, sanitize_path
@@ -454,7 +454,7 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                 df = self.context.get_dataset(tool_input["dataset_name"])
                 column = tool_input["column"]
                 
-                test_result = test_normality(df[column].dropna())
+                test_result = check_normality(df[column].dropna())
                 result = {
                     "column": column,
                     "test": test_result.test_name,

@@ -61,8 +61,6 @@ viz = [
 ml = [
     "scikit-learn>=1.3.0",
 ]
-
-[project.optional-dependencies]
 dev = [
     "pytest>=7.4.0",
     "pytest-asyncio>=0.21.0",
@@ -87,7 +85,7 @@ Repository = "https://github.com/geoffplymale/ai-analyst"
 Documentation = "https://github.com/geoffplymale/ai-analyst#readme"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/ai_analyst"]
+packages = ["ai_analyst"]
 
 [tool.ruff]
 target-version = "py310"
@@ -121,4 +119,5 @@ plugins = ["pydantic.mypy"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
-addopts = "-v --cov=src/ai_analyst --cov-report=term-missing"
+addopts = "-v --cov=ai_analyst --cov=analyst --cov=interactive --cov-report=term-missing"
+pythonpath = ["."]
