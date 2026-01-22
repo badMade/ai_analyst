@@ -431,11 +431,13 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                 duplicate_rows = df.duplicated().sum()
 
                 column_issues = {}
+                # Calculate null percentages for all columns at once
+                null_pcts = (df.isna().sum() / len(df) * 100).to_dict()
+
                 for col in df.columns:
                     issues = []
-                    null_pct = df[col].isna().sum() / len(df) * 100
-                    if null_pct > 0:
-                        issues.append(f"Missing: {null_pct:.1f}%")
+                    if null_pcts[col] > 0:
+                        issues.append(f"Missing: {null_pcts[col]:.1f}%")
                     if issues:
                         column_issues[col] = issues
 
