@@ -51,6 +51,6 @@ def test_detect_trend():
     values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     result = detect_trend(values)
 
-    assert "trend" in result
-    assert "slope" in result
-    assert "p_value" in result
+    assert result["trend"] == "increasing"
+    assert result["slope"] == 0.1
+    assert result["p_value"] == 0.05
