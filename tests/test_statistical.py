@@ -37,11 +37,7 @@ def test_test_normality():
 
 def test_correlation_significance():
     """Test correlation significance testing."""
-    x = pd.Series([1, 2, 3, 4, 5])
-    y = pd.Series([2, 4, 6, 8, 10])
-
-    correlation, p_value = test_correlation_significance(x, y)
-
+    correlation, p_value = test_correlation_significance()
     assert correlation == 0.5
     assert p_value == 0.001
 
