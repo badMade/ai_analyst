@@ -1,13 +1,13 @@
 from analyst import AnalysisContext, TOOLS
 
 
-def test_analysis_context_creation():
+def test_analysis_context_creation() -> None:
     """Test that AnalysisContext can be created."""
     context = AnalysisContext()
     assert context.datasets == {}
 
 
-def test_tools_structure():
+def test_tools_structure() -> None:
     """Test that TOOLS list has expected structure."""
     assert isinstance(TOOLS, list)
     assert len(TOOLS) > 0
@@ -18,7 +18,7 @@ def test_tools_structure():
         assert "input_schema" in tool
 
 
-def test_tool_names():
+def test_tool_names() -> None:
     """Test that expected tools are defined."""
     tool_names = [tool["name"] for tool in TOOLS]
 
