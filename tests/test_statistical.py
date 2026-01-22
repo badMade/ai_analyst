@@ -42,8 +42,8 @@ def test_correlation_significance():
 
     correlation, p_value = test_correlation_significance(x, y)
 
-    assert isinstance(correlation, (int, float))
-    assert isinstance(p_value, (int, float))
+    assert correlation == 0.5
+    assert p_value == 0.001
 
 
 def test_detect_trend():
