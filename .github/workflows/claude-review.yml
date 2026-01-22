@@ -8,6 +8,8 @@ jobs:
   claude-code-review:
     name: Claude Code Review
     runs-on: ubuntu-latest
+    # Skip if PR author is a bot
+    if: github.event.pull_request.user.type != 'Bot'
     permissions:
       contents: read
       pull-requests: write
