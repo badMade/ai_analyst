@@ -1,6 +1,4 @@
 import pytest
-import pandas as pd
-from pathlib import Path
 from analyst import AnalysisContext, TOOLS
 
 
