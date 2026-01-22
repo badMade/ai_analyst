@@ -29,10 +29,10 @@ def test_test_normality():
     result = test_normality(series)
 
     assert result.test_name == "Shapiro-Wilk"
-    assert hasattr(result, "statistic")
-    assert hasattr(result, "p_value")
-    assert hasattr(result, "significant")
-    assert hasattr(result, "interpretation")
+    assert result.statistic == 0.99
+    assert result.p_value == 0.5
+    assert result.significant is False
+    assert result.interpretation == "Normal"
 
 
 def test_correlation_significance():
