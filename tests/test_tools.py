@@ -25,7 +25,7 @@ def test_tool_names():
     """Test that expected tools are defined."""
     tool_names = [tool["name"] for tool in TOOLS]
 
-    expected_tools = [
+    expected_tools = {
         "load_dataset",
         "list_datasets",
         "preview_data",
@@ -36,7 +36,5 @@ def test_tool_names():
         "check_data_quality",
         "test_normality",
         "analyze_trend",
-    ]
-
-    for expected in expected_tools:
-        assert expected in tool_names, f"Tool '{expected}' not found in TOOLS"
+    }
+    assert set(tool_names) == expected_tools
