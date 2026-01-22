@@ -1,6 +1,8 @@
 import json
 import unittest
+
 import pandas as pd
+
 from analyst import StandaloneAnalyst
 
 class TestCheckNormalityTool(unittest.TestCase):
