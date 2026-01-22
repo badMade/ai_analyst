@@ -18,6 +18,7 @@ def test_compute_descriptive_stats():
     assert "min" in stats
     assert "max" in stats
     assert stats["mean"] == 3.0
+    assert stats["std"] == pytest.approx(1.58113883)
     assert stats["min"] == 1
     assert stats["max"] == 5
 
