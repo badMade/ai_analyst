@@ -1,4 +1,3 @@
-import pytest
 from analyst import AnalysisContext, TOOLS
 
 
