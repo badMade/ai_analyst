@@ -8,8 +8,13 @@ Uses Claude API directly with tool definitions for a simpler standalone setup.
 import asyncio
 import json
 import logging
+import os
+import sys
 from pathlib import Path
 from typing import Any
+
+# Add src to path for running without install
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
 import pandas as pd
 import numpy as np
@@ -63,7 +68,7 @@ class AnalysisContext:
             "columns": len(df.columns),
             "column_names": df.columns.tolist(),
             "dtypes": {col: str(dtype) for col, dtype in df.dtypes.items()},
-            "null_counts": {col: int(df[col].isna().sum()) for col in df.columns}
+            "null_counts": df.isna().sum().to_dict()
         }
     
     def get_dataset(self, name: str) -> pd.DataFrame:
@@ -426,27 +431,18 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                 null_counts = df.isna().sum()
                 null_cells = null_counts.sum()
                 duplicate_rows = df.duplicated().sum()
-                
-                column_issues = {}
-                total_rows = len(df)
 
-                # Only process column issues if DataFrame has rows
-                if total_rows > 0:
-                    for col in df.columns:
-                        issues = []
-                        # Reuse calculated value instead of calling df[col].isna().sum()
-                        null_count = null_counts[col]
-                        if null_count > 0:
-                            null_pct = (null_count / total_rows) * 100
-                            issues.append(f"Missing: {null_pct:.1f}%")
-                        if issues:
-                            column_issues[col] = issues
-                
-                # Avoid division by zero for empty DataFrames
-                null_percentage = round(null_cells / total_cells * 100, 2) if total_cells > 0 else 0.0
-                duplicate_percentage = round(duplicate_rows / total_rows * 100, 2) if total_rows > 0 else 0.0
-                quality_score = round(100 - (null_cells / total_cells * 50) - (duplicate_rows / total_rows * 50), 1) if total_cells > 0 and total_rows > 0 else 100.0
-                
+                column_issues = {}
+                # Vectorized calculation of null percentages
+                null_counts = df.isna().sum()
+                null_pcts = (null_counts / len(df)) * 100
+
+                # Filter only columns with nulls
+                cols_with_nulls = null_pcts[null_pcts > 0]
+
+                for col, pct in cols_with_nulls.items():
+                    column_issues[col] = [f"Missing: {pct:.1f}%"]
+
                 result = {
                     "total_rows": total_rows,
                     "total_columns": len(df.columns),

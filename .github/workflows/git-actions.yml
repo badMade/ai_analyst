@@ -1,0 +1,61 @@
+name: Git Auto Delete
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write
+
+jobs:
+  auto-delete-branch:
+    name: Auto Delete Merged Branch
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+    steps:
+      - name: Delete branch
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branch = context.payload.pull_request.head.ref;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            // Skip deletion for protected branch patterns
+            // Protected patterns include:
+            // - Exact matches: main, master, develop
+            // - Prefix matches: release/*, releases/*, hotfix/*
+            const protectedPatterns = ['main', 'master', 'develop'];
+            const protectedPrefixes = ['release/', 'releases/', 'hotfix/'];
+            
+            const isProtected = protectedPatterns.includes(branch) || 
+                                protectedPrefixes.some(prefix => branch.startsWith(prefix));
+            
+            if (isProtected) {
+              console.log(`Skipping deletion of protected branch: ${branch}`);
+              return;
+            }
+
+            try {
+              await github.rest.git.deleteRef({
+                owner,
+                repo,
+                ref: `heads/${branch}`
+              });
+              console.log(`Successfully deleted branch: ${branch}`);
+            } catch (error) {
+              // Handle specific error scenarios
+              if (error.status === 422) {
+                // 422 can mean branch doesn't exist or is protected
+                const errorMsg = error.message || '';
+                if (errorMsg.includes('Reference does not exist')) {
+                  console.log(`Branch ${branch} was already deleted`);
+                } else {
+                  console.log(`Unable to delete branch ${branch}: ${errorMsg}`);
+                }
+              } else if (error.status === 404) {
+                console.log(`Branch ${branch} not found (already deleted)`);
+              } else {
+                throw error;
+              }
+            }
