@@ -12,7 +12,15 @@ runs:
   steps:
     - run: pip install google-generativeai requests
       shell: bash
-    - run: python ${{ github.action_path }}/../../scripts/gemini_pr_review.py
+    - run: |
+        SCRIPT_PATH="${{ github.action_path }}/../../scripts/gemini_pr_review.py"
+        if [ -f "$SCRIPT_PATH" ]; then
+          python "$SCRIPT_PATH"
+        else
+          echo "Error: Gemini PR review script not found at '$SCRIPT_PATH'."
+          echo "Please ensure .github/scripts/gemini_pr_review.py exists in the repository."
+          exit 1
+        fi
       shell: bash
       env:
         GITHUB_TOKEN: ${{ inputs.github_token }}
