@@ -427,7 +427,9 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                 df = self.context.get_dataset(tool_input["dataset_name"])
                 
                 total_cells = df.size
-                null_cells = df.isna().sum().sum()
+                # Calculate null counts for all columns at once to avoid re-scanning in the loop
+                null_counts = df.isna().sum()
+                null_cells = null_counts.sum()
                 duplicate_rows = df.duplicated().sum()
 
                 column_issues = {}
@@ -442,14 +444,14 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                     column_issues[col] = [f"Missing: {pct:.1f}%"]
 
                 result = {
-                    "total_rows": len(df),
+                    "total_rows": total_rows,
                     "total_columns": len(df.columns),
                     "null_cells": int(null_cells),
-                    "null_percentage": round(null_cells / total_cells * 100, 2),
+                    "null_percentage": null_percentage,
                     "duplicate_rows": int(duplicate_rows),
-                    "duplicate_percentage": round(duplicate_rows / len(df) * 100, 2),
+                    "duplicate_percentage": duplicate_percentage,
                     "column_issues": column_issues,
-                    "quality_score": round(100 - (null_cells / total_cells * 50) - (duplicate_rows / len(df) * 50), 1)
+                    "quality_score": quality_score
                 }
             
             elif tool_name == "test_normality":
