@@ -26,8 +26,7 @@ def benchmark():
 
     # Create data efficiently
     data = np.random.randn(n_rows, n_cols)
-    df = pd.DataFrame(data, columns=[f"col_{i}" for i in range(n_cols)])
-    df = df.copy()
+    df = pd.DataFrame(data, columns=[f"col_{i}" for i in range(n_cols)], copy=True)
 
     # Inject nulls in 10% of columns
     print("Injecting nulls...")
