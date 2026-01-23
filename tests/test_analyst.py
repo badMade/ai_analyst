@@ -294,6 +294,7 @@ class TestAnalyze:
 
         result = analyst.analyze("Load the data")
 
+        assert isinstance(result, str)
         assert analyst.client.messages.create.call_count == 2
 
     def test_analyze_respects_max_iterations(self, analyst, mock_api_response_tool_use, sample_csv_file):
