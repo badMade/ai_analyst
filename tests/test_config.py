@@ -7,7 +7,6 @@ Tests the Settings class, environment variable handling, and utility functions.
 import pytest
 from pathlib import Path
 from unittest.mock import patch
-import os
 
 
 class TestSettings:
