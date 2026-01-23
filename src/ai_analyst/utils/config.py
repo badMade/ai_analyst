@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    anthropic_api_key: str = "sk-dummy-key"
+    anthropic_api_key: str = ""
 
 
 def get_settings():
