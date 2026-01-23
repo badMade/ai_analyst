@@ -1,0 +1,19 @@
+name: 'Jules AI Agent'
+description: 'Runs the Jules AI agent'
+inputs:
+  github_token:
+    description: 'GitHub token'
+    required: true
+  gemini_api_key:
+    description: 'Gemini API key'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - run: pip install google-generativeai requests
+      shell: bash
+    - run: python ${{ github.action_path }}/../../scripts/jules_agent.py
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github_token }}
+        GEMINI_API_KEY: ${{ inputs.gemini_api_key }}
