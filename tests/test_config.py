@@ -94,13 +94,13 @@ class TestEnvironmentConfiguration:
         settings = Settings()
         assert settings.anthropic_api_key == "sk-dummy-key"
 
-    def test_empty_api_key_uses_default(self, monkeypatch):
-        """Empty env var should use default."""
+    def test_empty_api_key_is_empty_string(self, monkeypatch):
+        """Empty env var should result in an empty string value."""
         monkeypatch.setenv("ANTHROPIC_API_KEY", "")
 
         from ai_analyst.utils.config import Settings
 
-        # Empty string is falsy but pydantic may handle differently
         settings = Settings()
-        # Should either be empty or default depending on pydantic behavior
-        assert settings.anthropic_api_key in ["", "sk-dummy-key"]
+        # pydantic-settings uses the empty string from the env var
+        # instead of falling back to the default.
+        assert settings.anthropic_api_key == ""
