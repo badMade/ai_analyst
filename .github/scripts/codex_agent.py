@@ -121,7 +121,7 @@ def list_repo_files(max_files: int) -> list[str]:
         check=False,
     )
     files = [f for f in file_list.stdout.splitlines() if f]
-    allowed_extensions = (".py", ".js", ".ts", ".md", ".yml", ".yaml", ".toml", ".json")
+    allowed_extensions = tuple(e.strip() for e in os.environ.get("CODEX_AGENT_ALLOWED_EXTENSIONS", ".py,.js,.ts,.md,.yml,.yaml,.toml,.json").split(","))
     filtered_files = [f for f in files if f.endswith(allowed_extensions)]
     return filtered_files[:max_files]
 
