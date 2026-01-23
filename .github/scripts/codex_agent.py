@@ -81,7 +81,7 @@ def git_commit_and_push(message: str, branch: str) -> bool:
         return False
 
 
-def resolve_issue_or_pr(repo: Github, event: dict):
+def resolve_issue_or_pr(repo: Github, event: dict) -> tuple:
     """Resolve the issue or PR object and comment body from the event."""
     comment_body = ""
     issue_or_pr = None
