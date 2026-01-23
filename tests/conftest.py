@@ -2,7 +2,6 @@
 Shared test fixtures for AI Analyst tests.
 """
 
-import os
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
