@@ -4,7 +4,6 @@ Tests for configuration and settings.
 Tests the Settings class, environment variable handling, and utility functions.
 """
 
-import pytest
 from pathlib import Path
 from unittest.mock import patch
 
