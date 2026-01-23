@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 OpenAI Codex Agent for GitHub.
 Responds to @codex-agent mentions and can make code changes.
@@ -112,7 +111,7 @@ def get_author_association(event: dict) -> str:
     return ""
 
 
-def list_repo_files(max_files: int) -> list[str]:
+def list_repo__files(max_files: int) -> list[str]:
     """List tracked repository files for context."""
     file_list = subprocess.run(
         ["git", "ls-files"],
