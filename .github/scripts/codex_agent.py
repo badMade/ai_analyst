@@ -170,15 +170,11 @@ def main():
     if not prompt:
         print("No prompt found after @codex-agent mention")
         return
-
-    # Get repository file structure
-    max_files_env = os.environ.get("CODEX_AGENT_MAX_FILES")
     try:
-        max_files_to_show = int(max_files_env) if max_files_env is not None else 50
+        max_files_to_show = int(os.environ.get("CODEX_AGENT_MAX_FILES", "50"))
     except ValueError:
         max_files_to_show = 50
     max_files_to_show = max(1, max_files_to_show)
-    files = list_repo_files(max_files_to_show)
 
     # Build agent prompt
     system_message = """You are Codex Agent, an AI coding assistant that can analyze and modify code.
