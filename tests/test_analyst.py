@@ -18,7 +18,7 @@ class TestStandaloneAnalystInit:
         with patch("anthropic.Anthropic") as mock_client:
             from analyst import StandaloneAnalyst
 
-            analyst = StandaloneAnalyst()
+            StandaloneAnalyst()
 
             mock_client.assert_called_once()
 
