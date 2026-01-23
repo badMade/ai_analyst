@@ -115,11 +115,16 @@ def list_repo_files(max_files: int) -> list[str]:
     """List tracked repository files for context."""
     file_list = subprocess.run(
         ["git", "ls-files"],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    files = [f for f in file_list.stdout.splitlines() if f]
+    try:
+        file_list = subprocess.run(
+            ["git", "ls-files"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        print(f"Warning: Could not list repository files: {e}")
+        return []
     allowed_extensions = (".py", ".js", ".ts", ".md", ".yml", ".yaml", ".toml", ".json")
     filtered_files = [f for f in files if f.endswith(allowed_extensions)]
     return filtered_files[:max_files]
