@@ -16,10 +16,26 @@ class TestEndToEndAnalysis:
     """End-to-end tests for the analysis workflow."""
 
     @pytest.fixture
-    def sample_sales_file(self):
-        """Path to sample sales data."""
-        return str(Path(__file__).parent.parent / "data" / "sample_sales.csv")
+    def sample_sales_file(self, tmp_path: Path) -> str:
+        """Create and return path to sample sales data CSV."""
+        csv_path = tmp_path / "sample_sales.csv"
 
+        num_rows = 30
+        products = [f"Product {i % 5}" for i in range(num_rows)]
+        quantities = [(i % 10) + 1 for i in range(num_rows)]
+        prices = [10.0 + (i % 5) * 2.5 for i in range(num_rows)]
+
+        df = pd.DataFrame(
+            {
+                "order_id": list(range(1, num_rows + 1)),
+                "product": products,
+                "quantity": quantities,
+                "price": prices,
+            }
+        )
+
+        df.to_csv(csv_path, index=False)
+        return str(csv_path)
     @pytest.fixture
     def analyst_with_mock_api(self, mock_settings):
         """Create analyst with mocked API client."""
