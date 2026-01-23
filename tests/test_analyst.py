@@ -8,7 +8,6 @@ import json
 import pytest
 from unittest.mock import MagicMock, patch
 import pandas as pd
-import numpy as np
 
 
 class TestStandaloneAnalystInit:
