@@ -4,15 +4,19 @@ Interactive REPL for AI Analyst
 Provides a continuous analysis session with conversation history.
 """
 
+import os
 import sys
 from pathlib import Path
+
+# Add src to path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.prompt import Prompt
 
-from ai_analyst.analyst import StandaloneAnalyst
+from analyst import StandaloneAnalyst
 from ai_analyst.utils.config import get_settings, setup_logging
 
 console = Console()

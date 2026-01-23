@@ -1,0 +1,19 @@
+name: 'ChatGPT Assistant'
+description: 'Runs the ChatGPT assistant'
+inputs:
+  github_token:
+    description: 'GitHub token'
+    required: true
+  openai_api_key:
+    description: 'OpenAI API key'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - run: pip install openai requests
+      shell: bash
+    - run: python ${{ github.action_path }}/../../scripts/chatgpt_assistant.py
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github_token }}
+        OPENAI_API_KEY: ${{ inputs.openai_api_key }}
