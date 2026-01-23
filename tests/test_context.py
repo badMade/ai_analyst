@@ -6,7 +6,6 @@ Tests dataset loading, retrieval, and error handling for different file formats.
 
 import pytest
 import pandas as pd
-from pathlib import Path
 
 
 class TestAnalysisContextInit:
