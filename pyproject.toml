@@ -61,8 +61,6 @@ viz = [
 ml = [
     "scikit-learn>=1.3.0",
 ]
-
-[project.optional-dependencies]
 dev = [
     "pytest>=7.4.0",
     "pytest-asyncio>=0.21.0",
@@ -122,3 +120,4 @@ plugins = ["pydantic.mypy"]
 asyncio_mode = "auto"
 testpaths = ["tests"]
 addopts = "-v --cov=src/ai_analyst --cov-report=term-missing"
+norecursedirs = ["src", ".git", "__pycache__"]

@@ -2,13 +2,13 @@ import pytest
 import pandas as pd
 from ai_analyst.tools.statistical import (
     compute_descriptive_stats,
-    test_normality,
-    test_correlation_significance,
+    test_normality as check_normality,
+    test_correlation_significance as check_correlation_significance,
     detect_trend,
 )
 
 
-def test_compute_descriptive_stats():
+def test_compute_descriptive_stats() -> None:
     """Test descriptive statistics computation."""
     series = pd.Series([1, 2, 3, 4, 5])
     stats = compute_descriptive_stats(series)
@@ -23,10 +23,10 @@ def test_compute_descriptive_stats():
     assert stats["max"] == 5
 
 
-def test_test_normality():
+def test_test_normality() -> None:
     """Test normality testing function."""
     series = pd.Series([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-    result = test_normality(series)
+    result = check_normality(series)
 
     assert result.test_name == "Shapiro-Wilk"
     assert result.statistic == 0.99
@@ -35,14 +35,16 @@ def test_test_normality():
     assert result.interpretation == "Normal"
 
 
-def test_correlation_significance():
+def test_correlation_significance() -> None:
     """Test correlation significance testing."""
-    correlation, p_value = test_correlation_significance()
+    x = pd.Series([1, 2, 3, 4, 5])
+    y = pd.Series([2, 4, 5, 4, 5])
+    correlation, p_value = check_correlation_significance(x, y)
     assert correlation == 0.5
     assert p_value == 0.001
 
 
-def test_detect_trend():
+def test_detect_trend() -> None:
     """Test trend detection."""
     values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     result = detect_trend(values)
