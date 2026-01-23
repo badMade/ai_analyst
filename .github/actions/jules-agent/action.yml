@@ -12,7 +12,7 @@ runs:
   steps:
     - run: pip install google-generativeai requests
       shell: bash
-    - run: python ${{ github.action_path }}/../scripts/jules_agent.py
+    - run: python ${{ github.action_path }}/../../scripts/jules_agent.py
       shell: bash
       env:
         GITHUB_TOKEN: ${{ inputs.github_token }}

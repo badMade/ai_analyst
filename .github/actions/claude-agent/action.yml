@@ -10,7 +10,7 @@ inputs:
   model:
     description: 'Claude model to use'
     required: false
-    default: 'claude-sonnet-4-20250514'
+    default: 'claude-3-opus-20240229'
   tools:
     description: 'Tools to use'
     required: false
@@ -20,7 +20,7 @@ runs:
   steps:
     - run: pip install anthropic requests
       shell: bash
-    - run: python ${{ github.action_path }}/../scripts/claude_agent.py
+    - run: python ${{ github.action_path }}/../../scripts/claude_agent.py
       shell: bash
       env:
         GITHUB_TOKEN: ${{ inputs.github_token }}

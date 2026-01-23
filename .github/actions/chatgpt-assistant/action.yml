@@ -12,46 +12,7 @@ runs:
   steps:
     - run: pip install openai requests
       shell: bash
-    - run: |
-        python - << 'PY'
-        import os
-        import sys
-        from textwrap import dedent
-
-
-        def main() -> int:
-            """Entry point for the ChatGPT assistant GitHub Action."""
-            github_token = os.environ.get("GITHUB_TOKEN")
-            openai_api_key = os.environ.get("OPENAI_API_KEY")
-
-            missing_vars: list[str] = []
-            if not github_token:
-                missing_vars.append("GITHUB_TOKEN")
-            if not openai_api_key:
-                missing_vars.append("OPENAI_API_KEY")
-
-            if missing_vars:
-                message = dedent(
-                    f"""
-                    Missing required environment variables: {", ".join(missing_vars)}
-
-                    Ensure the composite action inputs `github_token` and `openai_api_key`
-                    are provided correctly in your workflow.
-                    """
-                ).strip()
-                print(message, file=sys.stderr)
-                return 1
-
-            # Placeholder for ChatGPT assistant logic.
-            # At this point, you can safely use `github_token` and `openai_api_key`
-            # to interact with the GitHub API and OpenAI API as needed.
-            print("ChatGPT Assistant action executed successfully.")
-            return 0
-
-
-        if __name__ == "__main__":
-            raise SystemExit(main())
-        PY
+    - run: python ${{ github.action_path }}/../../scripts/chatgpt_assistant.py
       shell: bash
       env:
         GITHUB_TOKEN: ${{ inputs.github_token }}

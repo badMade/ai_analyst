@@ -12,35 +12,7 @@ runs:
   steps:
     - run: pip install google-generativeai requests
       shell: bash
-    - run: |
-        python - << 'EOF'
-        import os
-        import sys
-
-
-        def main() -> int:
-            """Entry point for the inline Gemini Assistant action."""
-            github_token = os.environ.get("GITHUB_TOKEN")
-            gemini_api_key = os.environ.get("GEMINI_API_KEY")
-
-            if not github_token:
-                print("Error: GITHUB_TOKEN is not set.", file=sys.stderr)
-                return 1
-
-            if not gemini_api_key:
-                print("Error: GEMINI_API_KEY is not set.", file=sys.stderr)
-                return 1
-
-            # Placeholder implementation.
-            # Extend this function to call the Gemini API or perform
-            # any required analysis using the provided credentials.
-            print("Gemini Assistant action executed successfully.")
-            return 0
-
-
-        if __name__ == "__main__":
-            raise SystemExit(main())
-        EOF
+    - run: python ${{ github.action_path }}/../../scripts/gemini_assistant.py
       shell: bash
       env:
         GITHUB_TOKEN: ${{ inputs.github_token }}
