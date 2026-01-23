@@ -128,13 +128,14 @@ class TestGetDataset:
         with pytest.raises(ValueError, match="test_data"):
             loaded_context.get_dataset("wrong_name")
 
-    def test_dataset_is_modifiable(self, loaded_context):
-        """Returned dataset should be the actual stored DataFrame."""
+    def test_get_dataset_returns_mutable_reference(self, loaded_context):
+        """Returned dataset should be a mutable reference to the stored DataFrame."""
         df = loaded_context.get_dataset("test_data")
-        original_len = len(df)
+        # Add a new column to modify the DataFrame in-place
+        df["new_col"] = "test"
 
-        # Modify in place
-        loaded_context.datasets["test_data"] = df.head(10)
+        # Retrieve the dataset again
+        df_again = loaded_context.get_dataset("test_data")
 
-        new_df = loaded_context.get_dataset("test_data")
-        assert len(new_df) == 10
+        # Check if the modification is present
+        assert "new_col" in df_again.columns
