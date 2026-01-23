@@ -132,8 +132,6 @@ def mock_api_response_tool_use():
 
 
 @pytest.fixture
-@pytest.fixture
-@pytest.fixture
 def mock_settings():
     """Create mock settings with a test API key."""
     with patch("analyst.get_settings") as mock_get_settings:
