@@ -1,5 +1,8 @@
+import json
 import unittest
+
 import pandas as pd
+
 from analyst import StandaloneAnalyst
 
 class TestCheckNormalityTool(unittest.TestCase):
@@ -14,7 +17,6 @@ class TestCheckNormalityTool(unittest.TestCase):
             "dataset_name": "test_data",
             "column": "normal_col"
         })
-        import json
         self.assertTrue(json.loads(result)['is_normal'])
 
 if __name__ == "__main__":
