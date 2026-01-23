@@ -339,7 +339,7 @@ class TestAnalyzeAsync:
         """Async method should pass file_path."""
         analyst.client.messages.create.return_value = mock_api_response_end_turn
 
-        result = await analyst.analyze_async("Test", file_path="/data/file.csv")
+        await analyst.analyze_async("Test", file_path="/data/file.csv")
 
         call_args = analyst.client.messages.create.call_args
         messages = call_args.kwargs["messages"]
