@@ -6,10 +6,7 @@ Tests the core analyst functionality including tool execution and API interactio
 
 import json
 import pytest
-from unittest.mock import MagicMock, patch
-import pandas as pd
-
-
+import numpy as np
 class TestStandaloneAnalystInit:
     """Tests for StandaloneAnalyst initialization."""
 
