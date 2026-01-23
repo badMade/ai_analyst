@@ -5,7 +5,6 @@ Tests the Settings class, environment variable handling, and utility functions.
 """
 
 from pathlib import Path
-from unittest.mock import patch
 
 
 class TestSettings:
