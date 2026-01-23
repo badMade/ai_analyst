@@ -8,11 +8,7 @@ import sys
 import pandas as pd
 import numpy as np
 
-# Add src to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
-
 from ai_analyst.tools import statistical
-
 def test_descriptive_stats():
     data = pd.Series([1, 2, 3, 4, 5])
     stats = statistical.compute_descriptive_stats(data)
