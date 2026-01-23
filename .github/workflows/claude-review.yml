@@ -22,6 +22,9 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          model: "claude-sonnet-4-20250514"
+          allowed_bots: "Copilot"
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
@@ -38,5 +41,4 @@ jobs:
             Use `mcp__github_inline_comment__create_inline_comment` to highlight specific code issues.
             Only post GitHub comments - don't submit review text as messages.
 
-          model: claude-sonnet-4-20250514
           allowed_tools: "mcp__github_inline_comment__create_inline_comment,Bash"
