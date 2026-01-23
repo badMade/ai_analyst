@@ -9,7 +9,6 @@ import pytest
 from unittest.mock import MagicMock, patch
 from pathlib import Path
 import pandas as pd
-import numpy as np
 
 
 class TestEndToEndAnalysis:
