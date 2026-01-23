@@ -7,11 +7,7 @@ Note: interactive.py is in the project root, not in the ai_analyst package.
 """
 
 import pytest
-from unittest.mock import MagicMock, patch, call
-from pathlib import Path
-import sys
-
-
+from unittest.mock import MagicMock, patch
 class TestRunInteractive:
     """Tests for run_interactive function."""
 
