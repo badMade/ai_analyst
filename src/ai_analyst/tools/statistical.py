@@ -1,9 +1,7 @@
 from collections import namedtuple
 from scipy import stats
-from scipy import stats
 
 TestResult = namedtuple("TestResult", ["test_name", "statistic", "p_value", "significant", "interpretation"])
-
 def compute_descriptive_stats(series):
     return {
         "mean": series.mean(),
