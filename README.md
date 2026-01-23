@@ -96,6 +96,14 @@ The workflow in `.github/workflows/claude.yml` uses this secret for:
 - Responding to `@claude` mentions in issues and PR comments
 - Agent mode with `@claude agent` for automated code changes
 
+### GitHub Comment Triggers (Codex)
+
+The Codex automation responds to GitHub comments containing `@codex-agent` and can open a branch with applied changes.
+
+1. Create the repository secret `OPENAI_API_KEY`.
+2. (Optional) Set `OPENAI_MODEL` and `CODEX_AGENT_MAX_FILES` as Actions variables to control the model and context size.
+3. In an issue or PR comment, mention `@codex-agent` followed by your request.
+
 ## Project Structure
 
 ```
