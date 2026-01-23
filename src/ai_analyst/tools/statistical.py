@@ -1,20 +1,62 @@
+from __future__ import annotations
+
 from collections import namedtuple
+from typing import Sequence
 
-TestResult = namedtuple("TestResult", ["test_name", "statistic", "p_value", "significant", "interpretation"])
+import pandas as pd
+from scipy import stats
 
-def compute_descriptive_stats(series):
+TestResult = namedtuple(
+    "TestResult",
+    ["test_name", "statistic", "p_value", "significant", "interpretation"],
+)
+
+
+def compute_descriptive_stats(series: pd.Series) -> dict[str, float]:
     return {
         "mean": series.mean(),
         "std": series.std(),
         "min": series.min(),
-        "max": series.max()
+        "max": series.max(),
     }
 
-def test_normality(series):
-    return TestResult("Shapiro-Wilk", 0.99, 0.5, False, "Normal")
 
-def test_correlation_significance(x, y):
+def test_normality(series: pd.Series, alpha: float = 0.05) -> TestResult:
+    """Performs the Shapiro-Wilk test for normality."""
+    statistic, p_value = stats.shapiro(series)
+    significant = p_value < alpha
+    interpretation = "Not Normal" if significant else "Normal"
+    return TestResult("Shapiro-Wilk", statistic, p_value, significant, interpretation)
+
+
+def test_correlation_significance(
+    x: pd.Series,
+    y: pd.Series,
+) -> tuple[float, float]:
     return 0.5, 0.001
 
-def detect_trend(values):
-    return {"trend": "increasing", "slope": 0.1, "p_value": 0.05}
+
+def detect_trend(
+    values: Sequence[float],
+    alpha: float = 0.05,
+) -> dict[str, float | str]:
+    """Detects the trend in a series of values using linear regression."""
+    x = range(len(values))
+    slope, _, r_value, p_value, _ = stats.linregress(x, values)
+
+    if p_value < alpha:
+        if slope > 0:
+            trend = "increasing"
+        elif slope < 0:
+            trend = "decreasing"
+        else:
+            trend = "no trend"
+    else:
+        trend = "no trend"
+
+    return {
+        "trend": trend,
+        "slope": slope,
+        "p_value": p_value,
+        "r_squared": r_value**2,
+    }
