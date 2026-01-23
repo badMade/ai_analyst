@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 OpenAI Codex Agent for GitHub.
 Responds to @codex-agent mentions and can make code changes.

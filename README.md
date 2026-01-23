@@ -19,6 +19,7 @@ python run.py analyze data/sample_sales.csv -q "What are the sales trends by reg
 ```
 
 **Or without installation:**
+
 ```bash
 pip install anthropic pandas numpy scipy pydantic pydantic-settings rich click openpyxl pyarrow
 python run.py analyze your_data.csv
