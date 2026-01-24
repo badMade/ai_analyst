@@ -9,6 +9,9 @@ import re
 import subprocess
 
 from github import Github
+from github.Issue import Issue
+from github.PullRequest import PullRequest
+from github.Repository import Repository
 from openai import OpenAI
 
 
@@ -80,7 +83,7 @@ def git_commit_and_push(message: str, branch: str) -> bool:
         return False
 
 
-def resolve_issue_or_pr(repo: Github, event: dict):
+def resolve_issue_or_pr(repo: Repository, event: dict) -> tuple[Issue | PullRequest | None, str]:
     """Resolve the issue or PR object and comment body from the event."""
     comment_body = ""
     issue_or_pr = None
@@ -113,8 +116,7 @@ def get_author_association(event: dict) -> str:
 
 def list_repo_files(max_files: int) -> list[str]:
     """List tracked repository files for context."""
-    file_list = subprocess.run(
-        ["git", "ls-files"],
+    max_files = max(1, max_files)
     try:
         file_list = subprocess.run(
             ["git", "ls-files"],
@@ -125,6 +127,7 @@ def list_repo_files(max_files: int) -> list[str]:
     except (subprocess.CalledProcessError, FileNotFoundError) as e:
         print(f"Warning: Could not list repository files: {e}")
         return []
+    files = [line.strip() for line in file_list.stdout.splitlines() if line.strip()]
     allowed_extensions = (".py", ".js", ".ts", ".md", ".yml", ".yaml", ".toml", ".json")
     filtered_files = [f for f in files if f.endswith(allowed_extensions)]
     return filtered_files[:max_files]
@@ -161,7 +164,7 @@ def main():
     # Validate author association as a defense-in-depth check
     author_association = get_author_association(event)
     allowed_associations = {"OWNER", "MEMBER", "COLLABORATOR"}
-    if author_association and author_association not in allowed_associations:
+    if not author_association or author_association not in allowed_associations:
         print(f"Unauthorized author association: {author_association}")
         return
 
@@ -175,6 +178,7 @@ def main():
     except ValueError:
         max_files_to_show = 50
     max_files_to_show = max(1, max_files_to_show)
+    files = list_repo_files(max_files_to_show)
 
     # Build agent prompt
     system_message = """You are Codex Agent, an AI coding assistant that can analyze and modify code.
@@ -193,14 +197,12 @@ When asked to make changes, provide your response in this JSON format:
 
 If no code changes are needed, set "changes" to an empty array and provide your response in "analysis"."""
 
-    files_for_context = files
-
     user_message = f"""Repository: {repo.full_name}
 Issue/PR: {issue_or_pr.title}
 Description: {issue_or_pr.body or 'No description'}
 
 Files in repository:
-{chr(10).join(files_for_context)}
+{chr(10).join(files)}
 
 User request: {prompt}
 
