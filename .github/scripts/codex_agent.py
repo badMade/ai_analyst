@@ -16,7 +16,7 @@ def get_event_data():
     """Load GitHub event data."""
     event_path = os.environ.get("GITHUB_EVENT_PATH")
     if event_path and os.path.exists(event_path):
-        with open(event_path) as f:
+        with open(event_path, encoding="utf-8") as f:
             return json.load(f)
     return {}
 
@@ -88,7 +88,11 @@ def resolve_issue_or_pr(repo: Github, event: dict) -> tuple:
     if "comment" in event:
         comment_body = event["comment"].get("body", "")
         if "issue" in event:
-            issue_or_pr = repo.get_issue(event["issue"]["number"])
+            issue = event["issue"]
+            if issue.get("pull_request"):
+                issue_or_pr = repo.get_pull(issue["number"])
+            else:
+                issue_or_pr = repo.get_issue(issue["number"])
         elif "pull_request" in event:
             issue_or_pr = repo.get_pull(event["pull_request"]["number"])
     elif "review" in event:
@@ -111,7 +115,7 @@ def get_author_association(event: dict) -> str:
     return ""
 
 
-def list_repo__files(max_files: int) -> list[str]:
+def list_repo_files() -> list[str]:
     """List tracked repository files for context."""
     file_list = subprocess.run(
         ["git", "ls-files"],
@@ -120,9 +124,46 @@ def list_repo__files(max_files: int) -> list[str]:
         check=False,
     )
     files = [f for f in file_list.stdout.splitlines() if f]
-    allowed_extensions = tuple(e.strip() for e in os.environ.get("CODEX_AGENT_ALLOWED_EXTENSIONS", ".py,.js,.ts,.md,.yml,.yaml,.toml,.json").split(","))
-    filtered_files = [f for f in files if f.endswith(allowed_extensions)]
-    return filtered_files[:max_files]
+    allowed_extensions = [
+        ext.strip() for ext in os.environ.get(
+            "CODEX_AGENT_ALLOWED_EXTENSIONS",
+            ".py,.js,.ts,.md,.yml,.yaml,.toml,.json",
+        ).split(",")
+        if ext.strip()
+    ]
+    normalized_extensions = tuple(
+        ext if ext.startswith(".") else f".{ext}" for ext in allowed_extensions
+    )
+    try:
+        max_file_bytes = int(os.environ.get("CODEX_AGENT_MAX_FILE_BYTES", "200000"))
+    except ValueError:
+        max_file_bytes = 200000
+    filtered_files = []
+    for file_path in files:
+        if not file_path.endswith(normalized_extensions):
+            continue
+        try:
+            if os.path.getsize(file_path) > max_file_bytes:
+                continue
+        except OSError:
+            continue
+        filtered_files.append(file_path)
+    return filtered_files
+
+
+def select_context_files(files: list[str], max_files: int) -> list[str]:
+    """Prioritize context files for the Codex prompt."""
+    preferred_prefixes = (".github/scripts/", ".github/workflows/")
+    preferred_files = {"README.md", "pyproject.toml"}
+    preferred = []
+    others = []
+    for file_path in files:
+        if file_path in preferred_files or file_path.startswith(preferred_prefixes):
+            preferred.append(file_path)
+        else:
+            others.append(file_path)
+    ordered = preferred + others
+    return ordered[:max_files]
 
 
 def main():
@@ -172,7 +213,7 @@ def main():
     except ValueError:
         max_files_to_show = 50
     max_files_to_show = max(1, max_files_to_show)
-    files = list_repo_files(max_files_to_show)
+    files = list_repo_files()
 
     # Build agent prompt
     system_message = """You are Codex Agent, an AI coding assistant that can analyze and modify code.
@@ -191,7 +232,7 @@ When asked to make changes, provide your response in this JSON format:
 
 If no code changes are needed, set "changes" to an empty array and provide your response in "analysis"."""
 
-    files_for_context = files
+    files_for_context = select_context_files(files, max_files_to_show)
 
     user_message = f"""Repository: {repo.full_name}
 Issue/PR: {issue_or_pr.title}
