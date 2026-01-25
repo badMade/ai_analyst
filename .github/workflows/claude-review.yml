@@ -18,8 +18,27 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Verify Anthropic API Key
+        run: |
+          if [ -z "${{ secrets.ANTHROPIC_API_KEY }}" ]; then
+            echo "Error: ANTHROPIC_API_KEY is not set"
+            exit 1
+          fi
+          echo "API key is present (length: ${#ANTHROPIC_API_KEY})"
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      - name: Test Network Connectivity
+        run: |
+          echo "Testing connectivity to Anthropic services..."
+          curl -I https://api.anthropic.com/ || echo "Warning: Cannot reach api.anthropic.com"
+
       - name: Run Claude Code Review
         uses: anthropics/claude-code-action@v1
+        continue-on-error: false
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
