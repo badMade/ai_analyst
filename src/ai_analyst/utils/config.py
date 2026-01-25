@@ -41,27 +41,6 @@ def check_pro_subscription_available() -> bool:
         if config_path.exists():
             return True
 
-    # Also check if claude CLI is available and logged in
-    try:
-        result = subprocess.run(
-            ["claude", "--version"],
-            capture_output=True,
-            text=True,
-            timeout=5
-        )
-        if result.returncode == 0:
-            # CLI exists, check auth status
-            auth_result = subprocess.run(
-                ["claude", "auth", "status"],
-                capture_output=True,
-                text=True,
-                timeout=10
-            )
-            if auth_result.returncode == 0 and "authenticated" in auth_result.stdout.lower():
-                return True
-    except (subprocess.TimeoutExpired, FileNotFoundError):
-        pass
-
     return False
 
 
