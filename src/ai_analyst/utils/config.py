@@ -1,7 +1,14 @@
 import logging
 from pathlib import Path
 from pydantic_settings import BaseSettings
+import os
 
+__all__ = [
+    "Settings",
+    "get_settings",
+    "sanitize_path",
+    "setup_logging",
+]
 
 class Settings(BaseSettings):
     anthropic_api_key: str = ""
@@ -21,6 +28,9 @@ def sanitize_path(path: str | Path) -> Path:
     All non-absolute paths are resolved relative to BASE_DATA_DIR, and the
     final resolved path must remain within BASE_DATA_DIR.
     """
+    if os.name != 'nt' and (isinstance(path, str) and len(path) > 2 and path[1] == ':'):
+        raise ValueError(f"Windows-style paths are not supported on this platform: {path}")
+
     raw_path: Path = Path(path)
 
     if raw_path.is_absolute():

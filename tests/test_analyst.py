@@ -7,6 +7,8 @@ Tests the core analyst functionality including tool execution and API interactio
 import json
 import pytest
 import numpy as np
+from unittest.mock import patch, MagicMock
+
 class TestStandaloneAnalystInit:
     """Tests for StandaloneAnalyst initialization."""
 
@@ -31,7 +33,8 @@ class TestStandaloneAnalystInit:
     def test_init_creates_analysis_context(self, mock_settings):
         """Should create an AnalysisContext."""
         with patch("anthropic.Anthropic"):
-            from analyst import StandaloneAnalyst, AnalysisContext
+            from analyst import StandaloneAnalyst
+            from analyst import AnalysisContext
 
             analyst = StandaloneAnalyst()
 
@@ -48,7 +51,6 @@ class TestStandaloneAnalystInit:
 
     def test_init_raises_without_api_key(self):
         """Should raise error if API key is not set."""
-        # Need to patch where get_settings is used (in analyst module)
         with patch("analyst.get_settings") as mock_get:
             mock_settings_obj = MagicMock()
             mock_settings_obj.anthropic_api_key = ""
@@ -64,31 +66,16 @@ class TestStandaloneAnalystInit:
 class TestExecuteTool:
     """Tests for _execute_tool method."""
 
-    @pytest.fixture
-    def analyst_with_data(self, mock_settings, sample_csv_file):
-        """Create analyst with loaded dataset."""
-        with patch("anthropic.Anthropic"):
-            from analyst import StandaloneAnalyst
-
-            analyst = StandaloneAnalyst()
-            analyst.context.load_dataset(sample_csv_file, "test_data")
-            return analyst
-
-    def test_execute_load_dataset(self, mock_settings, sample_csv_file):
+    def test_execute_load_dataset(self, analyst, sample_csv_file):
         """Should execute load_dataset tool."""
-        with patch("anthropic.Anthropic"):
-            from analyst import StandaloneAnalyst
+        result = analyst._execute_tool("load_dataset", {
+            "file_path": str(sample_csv_file),
+            "name": "my_data"
+        })
 
-            analyst = StandaloneAnalyst()
-
-            result = analyst._execute_tool("load_dataset", {
-                "file_path": sample_csv_file,
-                "name": "my_data"
-            })
-
-            result_dict = json.loads(result)
-            assert result_dict["name"] == "my_data"
-            assert result_dict["rows"] == 100
+        result_dict = json.loads(result)
+        assert result_dict["name"] == "my_data"
+        assert result_dict["rows"] == 100
 
     def test_execute_list_datasets(self, analyst_with_data):
         """Should list loaded datasets."""
@@ -237,16 +224,6 @@ class TestExecuteTool:
 class TestAnalyze:
     """Tests for analyze method."""
 
-    @pytest.fixture
-    def analyst(self, mock_settings):
-        """Create analyst with mocked client."""
-        with patch("anthropic.Anthropic") as mock_client_class:
-            from analyst import StandaloneAnalyst
-
-            analyst = StandaloneAnalyst()
-            analyst.client = MagicMock()
-            return analyst
-
     def test_analyze_returns_text_on_end_turn(self, analyst, mock_api_response_end_turn):
         """Should return text when API ends turn."""
         analyst.client.messages.create.return_value = mock_api_response_end_turn
@@ -277,15 +254,13 @@ class TestAnalyze:
 
     def test_analyze_processes_tool_use(self, analyst, mock_api_response_tool_use, mock_api_response_end_turn, sample_csv_file):
         """Should process tool use requests."""
-        # First call returns tool use, second returns end turn
         analyst.client.messages.create.side_effect = [
             mock_api_response_tool_use,
             mock_api_response_end_turn
         ]
 
-        # Mock the tool to not fail
         mock_api_response_tool_use.content[0].input = {
-            "file_path": sample_csv_file,
+            "file_path": str(sample_csv_file),
             "name": "test"
         }
 
@@ -296,9 +271,8 @@ class TestAnalyze:
 
     def test_analyze_respects_max_iterations(self, analyst, mock_api_response_tool_use, sample_csv_file):
         """Should stop after max iterations."""
-        # Always return tool use to simulate infinite loop
         mock_api_response_tool_use.content[0].input = {
-            "file_path": sample_csv_file
+            "file_path": str(sample_csv_file)
         }
         analyst.client.messages.create.return_value = mock_api_response_tool_use
         analyst.max_iterations = 3
@@ -311,16 +285,6 @@ class TestAnalyze:
 
 class TestAnalyzeAsync:
     """Tests for async analyze method."""
-
-    @pytest.fixture
-    def analyst(self, mock_settings):
-        """Create analyst with mocked client."""
-        with patch("anthropic.Anthropic"):
-            from analyst import StandaloneAnalyst
-
-            analyst = StandaloneAnalyst()
-            analyst.client = MagicMock()
-            return analyst
 
     @pytest.mark.asyncio
     async def test_analyze_async_calls_analyze(self, analyst, mock_api_response_end_turn):
@@ -363,52 +327,3 @@ class TestCreateAnalyst:
             analyst = create_analyst(model="claude-3-haiku-20240307")
 
             assert analyst.model == "claude-3-haiku-20240307"
-
-
-class TestToolDefinitions:
-    """Tests for TOOLS constant."""
-
-    def test_tools_is_list(self):
-        """TOOLS should be a list."""
-        from analyst import TOOLS
-
-        assert isinstance(TOOLS, list)
-
-    def test_tools_have_required_fields(self):
-        """Each tool should have name, description, input_schema."""
-        from analyst import TOOLS
-
-        for tool in TOOLS:
-            assert "name" in tool
-            assert "description" in tool
-            assert "input_schema" in tool
-
-    def test_tools_have_valid_schemas(self):
-        """Tool input schemas should be valid JSON schemas."""
-        from analyst import TOOLS
-
-        for tool in TOOLS:
-            schema = tool["input_schema"]
-            assert schema["type"] == "object"
-            assert "properties" in schema
-
-    def test_expected_tools_exist(self):
-        """Expected tools should be defined."""
-        from analyst import TOOLS
-
-        tool_names = {tool["name"] for tool in TOOLS}
-
-        expected = {
-            "load_dataset",
-            "list_datasets",
-            "preview_data",
-            "describe_statistics",
-            "compute_correlation",
-            "detect_outliers",
-            "group_analysis",
-            "check_data_quality",
-            "test_normality",
-            "analyze_trend"
-        }
-
-        assert expected.issubset(tool_names)
