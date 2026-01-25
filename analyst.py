@@ -27,7 +27,12 @@ from ai_analyst.tools.statistical import (
     test_correlation_significance,
     detect_trend,
 )
-from ai_analyst.utils.config import get_settings, sanitize_path
+from ai_analyst.utils.config import (
+    get_settings,
+    sanitize_path,
+    get_auth_method,
+    AuthMethod,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -295,11 +300,18 @@ When analyzing data:
 Be thorough but efficient. Present results in a structured, easy-to-understand format."""
     
     def __init__(self, model: str = "claude-sonnet-4-20250514"):
-        settings = get_settings()
-        if not settings.anthropic_api_key:
-            raise ValueError("ANTHROPIC_API_KEY not set")
-        
-        self.client = Anthropic(api_key=settings.anthropic_api_key)
+        # Get authentication method (Pro subscription first, API key as fallback)
+        self.auth_method, api_key = get_auth_method()
+
+        if self.auth_method == AuthMethod.PRO_SUBSCRIPTION:
+            # Use Pro subscription - Anthropic SDK auto-detects OAuth credentials
+            logger.info("Using Claude Pro subscription authentication")
+            self.client = Anthropic()
+        else:
+            # Use API key
+            logger.info("Using API key authentication")
+            self.client = Anthropic(api_key=api_key)
+
         self.model = model
         self.context = AnalysisContext()
         self.max_iterations = 15
