@@ -92,14 +92,17 @@ def inspect(file_path: str):
     path = Path(file_path)
     suffix = path.suffix.lower()
 
-    if suffix == ".csv":
-        df = pd.read_csv(path)
-    elif suffix == ".json":
-        df = pd.read_json(path)
-    elif suffix in [".xlsx", ".xls"]:
-        df = pd.read_excel(path)
-    elif suffix == ".parquet":
-        df = pd.read_parquet(path)
+    reader_map = {
+        ".csv": pd.read_csv,
+        ".json": pd.read_json,
+        ".xlsx": pd.read_excel,
+        ".xls": pd.read_excel,
+        ".parquet": pd.read_parquet,
+    }
+    reader = reader_map.get(suffix)
+
+    if reader:
+        df = reader(path)
     else:
         console.print(f"[red]Unsupported format:[/red] {suffix}")
         sys.exit(1)
