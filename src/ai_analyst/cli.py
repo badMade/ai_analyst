@@ -142,7 +142,7 @@ def auth():
     settings = get_settings()
     api_key = settings.anthropic_api_key
     if api_key:
-        masked_key = api_key[:8] + "..." + api_key[-4:] if len(api_key) > 12 else "***"
+        masked_key = "sk-ant-****"
         console.print(f"[green]\u2713[/green] API key: Configured ({masked_key})")
     else:
         console.print("[red]\u2717[/red] API key: Not set")
