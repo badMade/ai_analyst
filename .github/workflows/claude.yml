@@ -1,4 +1,4 @@
-name: Claude Code
+name: Claude Code Assistant
 
 on:
   issue_comment:
@@ -7,19 +7,19 @@ on:
     types: [created]
   issues:
     types: [opened, edited]
-  pull_request:
-    types: [opened, synchronize, reopened]
   pull_request_review:
     types: [submitted]
 
 jobs:
-  claude-code-review:
+  claude-assistant:
+    name: Claude Assistant
     if: |
-      (github.event_name == 'pull_request') ||
-      (github.event_name == 'pull_request_review') ||
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'issues' && contains(github.event.issue.body, '@claude'))
+      github.actor != 'Copilot' && (
+        (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
+        (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+        (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+        (github.event_name == 'issues' && contains(github.event.issue.body, '@claude'))
+      )
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -27,7 +27,7 @@ jobs:
       issues: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -40,8 +40,9 @@ jobs:
           model: "claude-sonnet-4-20250514"
 
   claude-agent:
+    name: Claude Agent
     if: |
-      (
+      github.actor != 'Copilot' && (
         contains(github.event.comment.body, '@claude agent') ||
         contains(github.event.issue.body, '@claude agent')
       ) && (
@@ -59,7 +60,7 @@ jobs:
       issues: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
