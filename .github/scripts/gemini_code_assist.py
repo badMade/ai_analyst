@@ -10,6 +10,9 @@ import subprocess
 import google.generativeai as genai
 from github import Github
 
+# Maximum length for diff content before truncation (Gemini token limits)
+MAX_DIFF_LENGTH = 30000
+
 
 def get_pr_diff() -> str:
     """Get the diff for the current PR."""
@@ -112,9 +115,8 @@ def main():
         return
 
     # Truncate diff if too long (Gemini has token limits)
-    max_diff_length = 30000
-    if len(diff) > max_diff_length:
-        diff = diff[:max_diff_length] + "\n... (diff truncated)"
+    if len(diff) > MAX_DIFF_LENGTH:
+        diff = diff[:MAX_DIFF_LENGTH] + "\n... (diff truncated)"
 
     # Sanitize PR metadata to avoid excessively long or malformed inputs
     max_title_length = 256
