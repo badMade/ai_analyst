@@ -39,7 +39,8 @@ def get_changed_files() -> list[str]:
             check=True,
         )
         return [f for f in result.stdout.strip().split("\n") if f]
-    except subprocess.CalledProcessError:
+    except subprocess.CalledProcessError as e:
+        print(f"Error getting changed files: {e}")
         return []
 
 
