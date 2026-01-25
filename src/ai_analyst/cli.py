@@ -46,7 +46,6 @@ def interactive(file_path: str | None, model: str):
         sys.exit(1)
 
     # Import here to avoid circular imports
-    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
     from interactive import run_interactive
 
     run_interactive(file_path, model)
