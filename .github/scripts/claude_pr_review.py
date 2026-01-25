@@ -155,8 +155,14 @@ Be constructive and specific. Use inline code references where applicable."""
         pr.create_issue_comment(review_body)
         print("Claude review posted successfully")
 
+    except anthropic.APIError as e:
+        error_msg = f"Claude API error during review generation: {e}"
+        print(error_msg)
+        pr.create_issue_comment(
+            f"Claude Code Review encountered an API error: {error_msg}"
+        )
     except Exception as e:
-        error_msg = f"Claude review failed: {e}"
+        error_msg = f"Claude review failed due to an unexpected error: {e}"
         print(error_msg)
         pr.create_issue_comment(
             f"Claude Code Review encountered an error: {error_msg}"
