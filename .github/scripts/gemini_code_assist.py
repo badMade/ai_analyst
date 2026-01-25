@@ -12,6 +12,8 @@ from github import Github
 
 # Maximum length for diff content before truncation (Gemini token limits)
 MAX_DIFF_LENGTH = 30000
+MAX_TITLE_LENGTH = 256
+MAX_BODY_LENGTH = 4000
 
 
 def get_pr_diff() -> str:
