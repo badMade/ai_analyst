@@ -75,7 +75,7 @@ def get_auth_method() -> tuple[AuthMethod, str | None]:
     2. If preference is "api": Try API key first, then Pro subscription
     """
     settings = get_settings()
-    api_key = settings.anthropic_api_key or os.environ.get("ANTHROPIC_API_KEY", "")
+    api_key = settings.anthropic_api_key
     pro_available = check_pro_subscription_available()
 
     if settings.auth_preference.lower() == "pro":
