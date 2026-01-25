@@ -30,7 +30,7 @@ def run_interactive(file_path: str | None = None, model: str = "claude-sonnet-4-
     try:
         auth_method, _ = get_auth_method()
         if auth_method == AuthMethod.PRO_SUBSCRIPTION:
-            auth_status = "[green]Claude Pro Subscription[/green]"
+            auth_status = "[green]Claude Pro subscription[/green]"
         else:
             auth_status = "[yellow]API Key[/yellow]"
     except ValueError as e:
