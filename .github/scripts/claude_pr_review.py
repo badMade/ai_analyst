@@ -105,6 +105,8 @@ Focus on code quality, potential bugs, security issues, and best practices.
 Format your response in GitHub-flavored markdown.
 Be thorough but concise. Prioritize the most important issues."""
 
+    changed_files_md = "\n".join(f"- {filename}" for filename in changed_files)
+
     user_prompt = f"""Review this pull request:
 
 ## Pull Request
@@ -112,7 +114,7 @@ Be thorough but concise. Prioritize the most important issues."""
 **Description:** {pr.body or 'No description provided'}
 
 ## Changed Files
-{"\n".join(f'- {f}' for f in changed_files)}
+{changed_files_md}
 
 ## Diff
 ```diff
@@ -133,7 +135,7 @@ Be constructive and specific. Use inline code references where applicable."""
     try:
         # Generate review using Claude
         response = client.messages.create(
-            model="claude-3.5-sonnet-20240620",
+            model=os.environ.get("CLAUDE_REVIEW_MODEL", "claude-3.5-sonnet-20240620"),
             max_tokens=2000,
             messages=[
                 {"role": "user", "content": user_prompt}
@@ -155,8 +157,14 @@ Be constructive and specific. Use inline code references where applicable."""
         pr.create_issue_comment(review_body)
         print("Claude review posted successfully")
 
-    except (anthropic.APIError, Exception) as e:
-        error_msg = f"Claude review failed: {e}"
+    except anthropic.APIError as e:
+        error_msg = f"Claude API error during review generation: {e}"
+        print(error_msg)
+        pr.create_issue_comment(
+            f"Claude Code Review encountered an API error: {error_msg}"
+        )
+    except Exception as e:
+        error_msg = f"Claude review failed due to an unexpected error: {e}"
         print(error_msg)
         pr.create_issue_comment(
             f"Claude Code Review encountered an error: {error_msg}"
