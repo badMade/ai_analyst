@@ -29,11 +29,13 @@ def check_pro_subscription_available() -> bool:
     which stores OAuth credentials locally.
     """
     # Check for Claude CLI config directory with stored credentials
+    claude_config_dir = os.environ.get("CLAUDE_CONFIG_DIR")
     claude_config_paths = [
         Path.home() / ".claude" / "credentials.json",
         Path.home() / ".config" / "claude" / "credentials.json",
-        Path(os.environ.get("CLAUDE_CONFIG_DIR", "")) / "credentials.json",
     ]
+    if claude_config_dir:
+        claude_config_paths.append(Path(claude_config_dir) / "credentials.json")
 
     for config_path in claude_config_paths:
         if config_path.exists():
