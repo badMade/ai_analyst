@@ -17,7 +17,7 @@ from rich.panel import Panel
 from rich.prompt import Prompt
 
 from analyst import StandaloneAnalyst
-from ai_analyst.utils.config import get_settings, setup_logging, get_auth_method, AuthMethod
+from ai_analyst.utils.config import setup_logging, get_auth_method, AuthMethod
 
 console = Console()
 
