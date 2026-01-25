@@ -76,7 +76,11 @@ def main():
         return
 
     repo = gh.get_repo(repo_name)
-    pr = repo.get_pull(int(pr_number))
+    try:
+        pr = repo.get_pull(int(pr_number))
+    except ValueError:
+        print(f"Error: PR number '{pr_number}' is not a valid integer.")
+        return
 
     # Get diff and files
     diff = get_pr_diff()
