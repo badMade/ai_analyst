@@ -301,9 +301,9 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
     
     def __init__(self, model: str = "claude-sonnet-4-20250514"):
         # Get authentication method (Pro subscription first, API key as fallback)
-        self.auth_method, api_key = get_auth_method()
+        auth_method, api_key = get_auth_method()
 
-        if self.auth_method == AuthMethod.PRO_SUBSCRIPTION:
+        if auth_method == AuthMethod.PRO_SUBSCRIPTION:
             # Use Pro subscription - Anthropic SDK auto-detects OAuth credentials
             logger.info("Using Claude Pro subscription authentication")
             self.client = Anthropic()
