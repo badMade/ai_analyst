@@ -74,11 +74,11 @@ def get_auth_method() -> tuple[AuthMethod, str | None]:
 
     # Neither available
     raise ValueError(
-        "No authentication method available.\n\n"
-        "Option 1 (Recommended): Use your Claude Pro subscription\n"
-        "  Run: claude login\n\n"
-        "Option 2: Use API key\n"
-        "  Set: export ANTHROPIC_API_KEY='your-api-key'\n"
+        "No authentication method available. "
+        "Option 1 (recommended): use your Claude Pro subscription "
+        "(run: 'claude login'). "
+        "Option 2: use an API key "
+        "(set: export ANTHROPIC_API_KEY='your-api-key')."
     )
 
 
