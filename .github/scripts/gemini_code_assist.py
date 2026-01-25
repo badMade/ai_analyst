@@ -85,7 +85,8 @@ def main():
         return
 
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    model_name = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
+    model = genai.GenerativeModel(model_name)
 
     # Get GitHub client
     gh_token = os.environ.get("GITHUB_TOKEN")
