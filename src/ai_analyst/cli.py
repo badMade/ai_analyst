@@ -73,7 +73,6 @@ def analyze(file_path: str, query: str, model: str):
         sys.exit(1)
 
     # Import here to avoid circular imports
-    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
     from analyst import StandaloneAnalyst
 
     analyst = StandaloneAnalyst(model=model)
