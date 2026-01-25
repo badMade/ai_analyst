@@ -20,9 +20,16 @@ def get_pr_diff() -> str:
     """Get the diff for the current PR."""
     # First try to read from file (set by workflow)
     if os.path.exists("/tmp/pr_diff.txt"):
-        with open("/tmp/pr_diff.txt") as f:
-            return f.read()
+        try:
+            with open("/tmp/pr_diff.txt") as f:
+                file_diff = f.read()
+        except OSError as e:
+            print(f"Error reading PR diff file: {e}")
+            file_diff = ""
 
+        # If the file contains a non-empty diff, use it; otherwise fall back to git diff
+        if file_diff.strip():
+            return file_diff
     # Fallback to git diff
     try:
         base_ref = os.environ.get("GITHUB_BASE_REF", "main")
