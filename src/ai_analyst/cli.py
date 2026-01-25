@@ -18,6 +18,21 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 console = Console()
 
 
+def show_authentication_method() -> None:
+    from ai_analyst.utils.config import get_auth_method, AuthMethod
+
+    # Show authentication method
+    try:
+        auth_method, _ = get_auth_method()
+        if auth_method == AuthMethod.PRO_SUBSCRIPTION:
+            console.print("[green]Using Claude Pro subscription[/green]")
+        else:
+            console.print("[yellow]Using API key authentication[/yellow]")
+    except ValueError as e:
+        console.print(f"[red]Authentication Error:[/red]\n{e}")
+        sys.exit(1)
+
+
 @click.group()
 @click.version_option(version="0.1.0", prog_name="ai-analyst")
 def main():
@@ -30,20 +45,11 @@ def main():
 @click.option("--model", "-m", default="claude-sonnet-4-20250514", help="Claude model to use")
 def interactive(file_path: str | None, model: str):
     """Start interactive analysis session."""
-    from ai_analyst.utils.config import setup_logging, get_auth_method, AuthMethod
+    from ai_analyst.utils.config import setup_logging
 
     setup_logging()
 
-    # Show authentication method
-    try:
-        auth_method, _ = get_auth_method()
-        if auth_method == AuthMethod.PRO_SUBSCRIPTION:
-            console.print("[green]Using Claude Pro subscription[/green]")
-        else:
-            console.print("[yellow]Using API key authentication[/yellow]")
-    except ValueError as e:
-        console.print(f"[red]Authentication Error:[/red]\n{e}")
-        sys.exit(1)
+    show_authentication_method()
 
     # Import here to avoid circular imports
     from interactive import run_interactive
@@ -57,20 +63,11 @@ def interactive(file_path: str | None, model: str):
 @click.option("--model", "-m", default="claude-sonnet-4-20250514", help="Claude model to use")
 def analyze(file_path: str, query: str, model: str):
     """Analyze a data file."""
-    from ai_analyst.utils.config import setup_logging, get_auth_method, AuthMethod
+    from ai_analyst.utils.config import setup_logging
 
     setup_logging()
 
-    # Show authentication method
-    try:
-        auth_method, _ = get_auth_method()
-        if auth_method == AuthMethod.PRO_SUBSCRIPTION:
-            console.print("[green]Using Claude Pro subscription[/green]")
-        else:
-            console.print("[yellow]Using API key authentication[/yellow]")
-    except ValueError as e:
-        console.print(f"[red]Authentication Error:[/red]\n{e}")
-        sys.exit(1)
+    show_authentication_method()
 
     # Import here to avoid circular imports
     from analyst import StandaloneAnalyst
