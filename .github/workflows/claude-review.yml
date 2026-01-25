@@ -24,17 +24,21 @@ jobs:
             echo "Error: ANTHROPIC_API_KEY is not set"
             exit 1
           fi
-          echo "ANTHROPIC_API_KEY is present"
+          echo "API key is present (length: ${#ANTHROPIC_API_KEY})"
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
-      - name: Test Claude network connectivity
-        continue-on-error: true
+      - name: Test Network Connectivity
         run: |
-          echo "Testing connectivity to Claude endpoints"
-          curl -fsSLI https://claude.ai/ || echo "Warning: Unable to reach claude.ai"
-          curl -fsSLI https://api.anthropic.com/ || echo "Warning: Unable to reach api.anthropic.com"
+          echo "Testing connectivity to Anthropic services..."
+          curl -I https://api.anthropic.com/ || echo "Warning: Cannot reach api.anthropic.com"
 
       - name: Run Claude Code Review
         uses: anthropics/claude-code-action@v1
+        continue-on-error: false
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
