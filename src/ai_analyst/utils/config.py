@@ -57,7 +57,7 @@ def check_pro_subscription_available() -> bool:
             )
             if auth_result.returncode == 0 and "authenticated" in auth_result.stdout.lower():
                 return True
-    except (subprocess.TimeoutExpired, FileNotFoundError, Exception):
+    except (subprocess.TimeoutExpired, FileNotFoundError):
         pass
 
     return False
