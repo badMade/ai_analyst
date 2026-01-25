@@ -12,9 +12,6 @@ from pathlib import Path
 import click
 from rich.console import Console
 
-# Add parent directory to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
-
 console = Console()
 
 
