@@ -4,12 +4,8 @@ Interactive REPL for AI Analyst
 Provides a continuous analysis session with conversation history.
 """
 
-import os
 import sys
 from pathlib import Path
-
-# Add src to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
 from rich.console import Console
 from rich.markdown import Markdown
@@ -22,7 +18,10 @@ from ai_analyst.utils.config import setup_logging, get_auth_method, AuthMethod
 console = Console()
 
 
-def run_interactive(file_path: str | None = None, model: str = "claude-sonnet-4-20250514"):
+def run_interactive(
+    file_path: str | None = None,
+    model: str = "claude-sonnet-4-20250514",
+) -> None:
     """Run interactive analysis REPL."""
     setup_logging()
 
@@ -32,7 +31,7 @@ def run_interactive(file_path: str | None = None, model: str = "claude-sonnet-4-
         if auth_method == AuthMethod.PRO_SUBSCRIPTION:
             auth_status = "[green]Claude Pro subscription[/green]"
         else:
-            auth_status = "[yellow]API Key[/yellow]"
+            auth_status = "[yellow]API key[/yellow]"
     except ValueError as e:
         console.print(f"[red]Authentication Error:[/red]\n{e}")
         sys.exit(1)

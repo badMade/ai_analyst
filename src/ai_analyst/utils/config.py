@@ -57,18 +57,19 @@ def get_auth_method() -> tuple[AuthMethod, str | None]:
     """
     settings = get_settings()
     api_key = settings.anthropic_api_key
+    api_key_clean = api_key.strip() if api_key else ""
     pro_available = check_pro_subscription_available()
 
     if settings.auth_preference.lower() == "pro":
         # Pro subscription first (user's preferred method)
         if pro_available:
             return AuthMethod.PRO_SUBSCRIPTION, None
-        elif api_key:
-            return AuthMethod.API_KEY, api_key
+        elif api_key_clean:
+            return AuthMethod.API_KEY, api_key_clean
     else:
         # API key first
-        if api_key:
-            return AuthMethod.API_KEY, api_key
+        if api_key_clean:
+            return AuthMethod.API_KEY, api_key_clean
         elif pro_available:
             return AuthMethod.PRO_SUBSCRIPTION, None
 
@@ -111,6 +112,8 @@ def sanitize_path(path: str | Path) -> Path:
         )
 
     return candidate
+
+
 def setup_logging(level: int = logging.INFO) -> None:
     """Configure logging for the application."""
     logging.basicConfig(

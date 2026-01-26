@@ -8,13 +8,7 @@ Uses Claude API directly with tool definitions for a simpler standalone setup.
 import asyncio
 import json
 import logging
-import os
-import sys
-from pathlib import Path
 from typing import Any
-
-# Add src to path for running without install
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
 import pandas as pd
 import numpy as np
@@ -437,7 +431,8 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
             
             elif tool_name == "check_data_quality":
                 df = self.context.get_dataset(tool_input["dataset_name"])
-                
+
+                total_rows = len(df)
                 total_cells = df.size
                 # Calculate null counts for all columns at once to avoid re-scanning in the loop
                 null_counts = df.isna().sum()
@@ -454,6 +449,12 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
 
                 for col, pct in cols_with_nulls.items():
                     column_issues[col] = [f"Missing: {pct:.1f}%"]
+
+                null_percentage = (null_cells / total_cells) * 100 if total_cells else 0.0
+                duplicate_percentage = (
+                    (duplicate_rows / total_rows) * 100 if total_rows else 0.0
+                )
+                quality_score = 100 - (null_percentage * 0.5 + duplicate_percentage * 0.5)
 
                 result = {
                     "total_rows": total_rows,

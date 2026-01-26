@@ -5,14 +5,19 @@ CLI entry point for AI Analyst.
 Provides command-line interface for data analysis using Claude.
 """
 
-import os
 import sys
-from pathlib import Path
-
+from importlib.metadata import PackageNotFoundError, version
 import click
 from rich.console import Console
 
 console = Console()
+
+
+def get_cli_version() -> str:
+    try:
+        return version("ai-analyst")
+    except PackageNotFoundError:
+        return "0.0.0"
 
 
 def show_authentication_method() -> None:
@@ -29,10 +34,9 @@ def show_authentication_method() -> None:
         console.print(f"[red]Authentication Error:[/red]\n{e}")
         sys.exit(1)
 
-
 @click.group()
-@click.version_option(version="0.1.0", prog_name="ai-analyst")
-def main():
+@click.version_option(version=get_cli_version(), prog_name="ai-analyst")
+def main() -> None:
     """AI Analyst - Intelligent data analysis powered by Claude."""
     pass
 
@@ -40,7 +44,7 @@ def main():
 @main.command()
 @click.argument("file_path", type=click.Path(exists=True), required=False)
 @click.option("--model", "-m", default="claude-sonnet-4-20250514", help="Claude model to use")
-def interactive(file_path: str | None, model: str):
+def interactive(file_path: str | None, model: str) -> None:
     """Start interactive analysis session."""
     from ai_analyst.utils.config import setup_logging
 
@@ -58,7 +62,7 @@ def interactive(file_path: str | None, model: str):
 @click.argument("file_path", type=click.Path(exists=True))
 @click.option("--query", "-q", default="Provide a comprehensive analysis of this dataset", help="Analysis query")
 @click.option("--model", "-m", default="claude-sonnet-4-20250514", help="Claude model to use")
-def analyze(file_path: str, query: str, model: str):
+def analyze(file_path: str, query: str, model: str) -> None:
     """Analyze a data file."""
     from ai_analyst.utils.config import setup_logging
 
@@ -78,12 +82,18 @@ def analyze(file_path: str, query: str, model: str):
 
 @main.command()
 @click.argument("file_path", type=click.Path(exists=True))
-def inspect(file_path: str):
+def inspect(file_path: str) -> None:
     """Inspect a data file structure."""
     import pandas as pd
     from rich.table import Table
+    from ai_analyst.utils.config import sanitize_path
 
-    path = Path(file_path)
+    try:
+        path = sanitize_path(file_path)
+    except ValueError as exc:
+        console.print(f"[red]Invalid path:[/red] {exc}")
+        sys.exit(1)
+
     suffix = path.suffix.lower()
 
     reader_map = {
@@ -95,13 +105,17 @@ def inspect(file_path: str):
     }
     reader = reader_map.get(suffix)
 
-    if reader:
-        df = reader(path)
-    else:
+    if not reader:
         console.print(f"[red]Unsupported format:[/red] {suffix}")
         sys.exit(1)
 
-    console.print(f"\n[bold]File:[/bold] {file_path}")
+    try:
+        df = reader(path)
+    except (pd.errors.EmptyDataError, pd.errors.ParserError, PermissionError, OSError, ValueError) as exc:
+        console.print(f"[red]Error reading file:[/red] {exc}")
+        sys.exit(1)
+
+    console.print(f"\n[bold]File:[/bold] {path}")
     console.print(f"[bold]Shape:[/bold] {df.shape[0]} rows x {df.shape[1]} columns\n")
 
     table = Table(title="Column Information")
@@ -119,7 +133,7 @@ def inspect(file_path: str):
 
 
 @main.command()
-def auth():
+def auth() -> None:
     """Check authentication status and available methods."""
     from ai_analyst.utils.config import (
         get_auth_method,
