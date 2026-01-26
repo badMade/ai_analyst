@@ -55,13 +55,46 @@ def mock_api_response_end_turn():
 
 @pytest.fixture
 def mock_api_response_tool_use():
-    """Return a mock API response that uses a tool."""
-    response = MagicMock()
-    response.stop_reason = "tool_use"
-    tool_use_block = MagicMock()
-    tool_use_block.type = "tool_use"
-    tool_use_block.id = "tool_123"
-    tool_use_block.name = "load_dataset"
-    tool_use_block.input = {"file_path": "/path/to/data.csv"}
-    response.content = [tool_use_block]
-    return response
+    """Create a mock API response that requests tool use."""
+    mock_response = MagicMock()
+    mock_response.stop_reason = "tool_use"
+
+    mock_tool_block = MagicMock()
+    mock_tool_block.type = "tool_use"
+    mock_tool_block.name = "load_dataset"
+    mock_tool_block.id = "tool_123"
+    mock_tool_block.input = {"file_path": "/path/to/data.csv"}
+
+    mock_response.content = [mock_tool_block]
+    return mock_response
+
+
+@pytest.fixture
+def mock_settings():
+    """Create mock settings with a test API key."""
+    from ai_analyst.utils.config import AuthMethod
+
+    with patch("analyst.get_auth_method") as mock_get_auth_method:
+        mock_get_auth_method.return_value = (AuthMethod.API_KEY, "test-api-key-12345")
+        yield mock_get_auth_method
+
+
+@pytest.fixture
+def env_with_api_key(monkeypatch):
+    """Set environment variable for API key."""
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-api-key-from-env")
+    return "test-api-key-from-env"
+
+
+@pytest.fixture
+def analysis_context():
+    """Create a fresh AnalysisContext for testing."""
+    from analyst import AnalysisContext
+    return AnalysisContext()
+
+
+@pytest.fixture
+def loaded_context(analysis_context, sample_csv_file):
+    """Create an AnalysisContext with a loaded dataset."""
+    analysis_context.load_dataset(sample_csv_file, "test_data")
+    return analysis_context

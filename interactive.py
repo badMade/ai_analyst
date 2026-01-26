@@ -4,7 +4,6 @@ Interactive REPL for AI Analyst
 Provides a continuous analysis session with conversation history.
 """
 
-import os
 import sys
 from pathlib import Path
 
@@ -14,22 +13,32 @@ from rich.panel import Panel
 from rich.prompt import Prompt
 
 from analyst import StandaloneAnalyst
-from ai_analyst.utils.config import get_settings, setup_logging
+from ai_analyst.utils.config import setup_logging, get_auth_method, AuthMethod
 
 console = Console()
 
 
-def run_interactive(file_path: str | None = None, model: str = "claude-sonnet-4-20250514"):
+def run_interactive(
+    file_path: str | None = None,
+    model: str = "claude-sonnet-4-20250514",
+) -> None:
     """Run interactive analysis REPL."""
     setup_logging()
-    settings = get_settings()
-    
-    if not settings.anthropic_api_key:
-        console.print("[red]Error:[/red] ANTHROPIC_API_KEY not set")
+
+    # Check authentication
+    try:
+        auth_method, _ = get_auth_method()
+        if auth_method == AuthMethod.PRO_SUBSCRIPTION:
+            auth_status = "[green]Claude Pro subscription[/green]"
+        else:
+            auth_status = "[yellow]API key[/yellow]"
+    except ValueError as e:
+        console.print(f"[red]Authentication Error:[/red]\n{e}")
         sys.exit(1)
-    
+
     console.print(Panel(
         "[bold cyan]AI Analyst Interactive Mode[/bold cyan]\n\n"
+        f"Authentication: {auth_status}\n\n"
         "Commands:\n"
         "  [green]load <file>[/green]  - Load a dataset\n"
         "  [green]quit/exit[/green]    - Exit session\n"
@@ -39,7 +48,7 @@ def run_interactive(file_path: str | None = None, model: str = "claude-sonnet-4-
         title="Welcome",
         border_style="blue"
     ))
-    
+
     analyst = StandaloneAnalyst(model=model)
     current_file = file_path
     

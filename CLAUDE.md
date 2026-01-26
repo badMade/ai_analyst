@@ -12,13 +12,13 @@ AI Analyst is a Python-based tool that leverages Claude for intelligent data ana
 ## Repository Structure
 
 ai-analyst/
-├── run.py                  # Standalone runner
+├── run.py                  # CLI entry point
+├── analyst.py              # Core standalone analyst
+├── interactive.py          # REPL mode
 ├── src/ai_analyst/
-│   ├── analyst.py          # Core standalone analyst
-│   ├── cli.py              # Click CLI
-│   ├── interactive.py      # REPL mode
+│   ├── cli.py              # Click CLI commands
 │   ├── tools/statistical.py
-│   └── utils/config.py
+│   └── utils/config.py     # Settings and authentication
 ├── data/sample_sales.csv
 └── pyproject.toml
 
@@ -35,9 +35,39 @@ ai-analyst/
 - CLI: `click`, `rich`, `pydantic`
 - Optional: `matplotlib`, `scikit-learn` for visualization and ML
 
+### Authentication
+
+AI Analyst supports two authentication methods, with Claude Pro subscription as the primary option:
+
+#### Option 1: Claude Pro Subscription (Recommended)
+Use your existing Claude Pro/Max subscription:
+```bash
+claude login
+```
+This authenticates via OAuth and stores credentials locally. No API credits needed!
+
+#### Option 2: API Key (Fallback)
+Set the API key environment variable:
+```bash
+export ANTHROPIC_API_KEY='your-api-key'
+```
+
+#### Authentication Priority
+By default, Pro subscription is checked first. To change this:
+```bash
+export AUTH_PREFERENCE=api  # Use API key first
+export AUTH_PREFERENCE=pro  # Use Pro subscription first (default)
+```
+
+Check your authentication status:
+```bash
+python run.py auth
+```
+
 ### Environment Variables
-- `ANTHROPIC_API_KEY` - Required for Claude API access
-- `AI_ANALYST_MODEL` - Model to use (default: claude-3.5-sonnet-20240620)
+- `ANTHROPIC_API_KEY` - API key (fallback if Pro subscription not available)
+- `AUTH_PREFERENCE` - Authentication priority: "pro" (default) or "api"
+- `AI_ANALYST_MODEL` - Model to use (default: claude-sonnet-4-20250514)
 - `AI_ANALYST_LOG_LEVEL` - Logging verbosity
 
 ### Testing
