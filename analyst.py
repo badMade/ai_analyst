@@ -434,18 +434,20 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
 
                 total_rows = len(df)
                 total_cells = df.size
-
+                # Calculate null counts for all columns at once to avoid re-scanning in the loop
                 null_counts = df.isna().sum()
                 null_cells = null_counts.sum()
-                null_percentage = (null_cells / total_cells) * 100 if total_cells > 0 else 0
-
                 duplicate_rows = df.duplicated().sum()
-                duplicate_percentage = (duplicate_rows / total_rows) * 100 if total_rows > 0 else 0
 
                 column_issues = {}
-                cols_with_nulls = null_counts[null_counts > 0]
-                for col, count in cols_with_nulls.items():
-                    pct = (count / total_rows) * 100
+                # Vectorized calculation of null percentages
+                null_counts = df.isna().sum()
+                null_pcts = (null_counts / len(df)) * 100
+
+                # Filter only columns with nulls
+                cols_with_nulls = null_pcts[null_pcts > 0]
+
+                for col, pct in cols_with_nulls.items():
                     column_issues[col] = [f"Missing: {pct:.1f}%"]
 
                 null_percentage = (null_cells / total_cells) * 100 if total_cells else 0.0
@@ -458,11 +460,11 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                     "total_rows": total_rows,
                     "total_columns": len(df.columns),
                     "null_cells": int(null_cells),
-                    "null_percentage": round(null_percentage, 2),
+                    "null_percentage": null_percentage,
                     "duplicate_rows": int(duplicate_rows),
-                    "duplicate_percentage": round(duplicate_percentage, 2),
+                    "duplicate_percentage": duplicate_percentage,
                     "column_issues": column_issues,
-                    "quality_score": round(quality_score, 2)
+                    "quality_score": quality_score
                 }
             
             elif tool_name == "test_normality":
