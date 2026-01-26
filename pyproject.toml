@@ -120,4 +120,4 @@ plugins = ["pydantic.mypy"]
 asyncio_mode = "auto"
 testpaths = ["tests"]
 addopts = "-v --cov=src/ai_analyst --cov-report=term-missing"
-pythonpaths = ["src", "."]
+pythonpath = ["src", "."]
