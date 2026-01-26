@@ -6,8 +6,13 @@ Tests the interactive session, command handling, and user interface.
 Note: interactive.py is in the project root, not in the ai_analyst package.
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
+
+from ai_analyst.utils.config import AuthMethod
+
+
 class TestRunInteractive:
     """Tests for run_interactive function."""
 
@@ -34,11 +39,9 @@ class TestRunInteractive:
     @pytest.fixture
     def mock_settings_valid(self):
         """Mock valid settings with API key."""
-        with patch("interactive.get_settings") as mock:
-            mock_settings = MagicMock()
-            mock_settings.anthropic_api_key = "valid-key"
-            mock.return_value = mock_settings
-            yield mock_settings
+        with patch("interactive.get_auth_method") as mock:
+            mock.return_value = (AuthMethod.API_KEY, "valid-key")
+            yield mock
 
     @pytest.fixture
     def mock_setup_logging(self):
@@ -48,8 +51,8 @@ class TestRunInteractive:
 
     def test_exits_without_api_key(self, mock_console, mock_setup_logging):
         """Should exit if API key is not set."""
-        with patch("interactive.get_settings") as mock_settings:
-            mock_settings.return_value.anthropic_api_key = ""
+        with patch("interactive.get_auth_method") as mock_get_auth_method:
+            mock_get_auth_method.side_effect = ValueError("Missing ANTHROPIC_API_KEY")
 
             with pytest.raises(SystemExit) as exc_info:
                 from interactive import run_interactive
