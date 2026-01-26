@@ -440,9 +440,8 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                 duplicate_rows = df.duplicated().sum()
 
                 column_issues = {}
-                # Vectorized calculation of null percentages
-                null_counts = df.isna().sum()
-                null_pcts = (null_counts / len(df)) * 100
+                # Vectorized calculation of null percentages using precomputed null_counts
+                null_pcts = (null_counts / total_rows) * 100
 
                 # Filter only columns with nulls
                 cols_with_nulls = null_pcts[null_pcts > 0]
