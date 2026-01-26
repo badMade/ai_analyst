@@ -109,10 +109,10 @@ The Codex automation responds to GitHub comments containing `@codex-agent` and c
 ```
 ai-analyst/
 ├── run.py                  # Standalone runner
+├── analyst.py              # Core standalone analyst
+├── interactive.py          # REPL mode
 ├── src/ai_analyst/
-│   ├── analyst.py          # Core standalone analyst
 │   ├── cli.py              # Click CLI
-│   ├── interactive.py      # REPL mode
 │   ├── tools/statistical.py
 │   └── utils/config.py
 ├── data/sample_sales.csv
@@ -131,7 +131,7 @@ cp -r ai-analyst ~/mothership/apps/
 pip install -e ~/mothership/apps/ai-analyst
 
 # Import in your code
-from ai_analyst.analyst import StandaloneAnalyst
+from analyst import StandaloneAnalyst
 ```
 
 **Optional MCP mode** (for server integration):
