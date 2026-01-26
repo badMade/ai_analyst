@@ -105,6 +105,9 @@ Focus on code quality, potential bugs, security issues, and best practices.
 Format your response in GitHub-flavored markdown.
 Be thorough but concise. Prioritize the most important issues."""
 
+    files_list = "\n".join(f"- {f}" for f in changed_files)
+    truncated_note = "(Note: diff was truncated due to size)" if truncated else ""
+
     user_prompt = f"""Review this pull request:
 
 ## Pull Request
@@ -112,13 +115,13 @@ Be thorough but concise. Prioritize the most important issues."""
 **Description:** {pr.body or 'No description provided'}
 
 ## Changed Files
-{"\n".join(f'- {f}' for f in changed_files)}
+{files_list}
 
 ## Diff
 ```diff
 {diff}
 ```
-{"(Note: diff was truncated due to size)" if truncated else ""}
+{truncated_note}
 
 Please provide a thorough code review covering:
 
