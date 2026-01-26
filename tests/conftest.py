@@ -127,11 +127,11 @@ def mock_api_response_tool_use():
 @pytest.fixture
 def mock_settings():
     """Create mock settings with a test API key."""
-    with patch("analyst.get_settings") as mock_get_settings:
-        mock_settings_obj = MagicMock()
-        mock_settings_obj.anthropic_api_key = "test-api-key-12345"
-        mock_get_settings.return_value = mock_settings_obj
-        yield mock_settings_obj
+    from ai_analyst.utils.config import AuthMethod
+
+    with patch("analyst.get_auth_method") as mock_get_auth_method:
+        mock_get_auth_method.return_value = (AuthMethod.API_KEY, "test-api-key-12345")
+        yield mock_get_auth_method
 
 
 @pytest.fixture

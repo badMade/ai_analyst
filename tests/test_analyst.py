@@ -5,8 +5,12 @@ Tests the core analyst functionality including tool execution and API interactio
 """
 
 import json
+from unittest.mock import MagicMock, patch
+
 import pytest
 import numpy as np
+
+
 class TestStandaloneAnalystInit:
     """Tests for StandaloneAnalyst initialization."""
 
@@ -48,11 +52,9 @@ class TestStandaloneAnalystInit:
 
     def test_init_raises_without_api_key(self):
         """Should raise error if API key is not set."""
-        # Need to patch where get_settings is used (in analyst module)
-        with patch("analyst.get_settings") as mock_get:
-            mock_settings_obj = MagicMock()
-            mock_settings_obj.anthropic_api_key = ""
-            mock_get.return_value = mock_settings_obj
+        # Need to patch where get_auth_method is used (in analyst module)
+        with patch("analyst.get_auth_method") as mock_get_auth_method:
+            mock_get_auth_method.side_effect = ValueError("Missing ANTHROPIC_API_KEY")
 
             with patch("anthropic.Anthropic"):
                 from analyst import StandaloneAnalyst

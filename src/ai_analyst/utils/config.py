@@ -1,13 +1,86 @@
 import logging
+import os
+import subprocess
+from enum import Enum
 from pathlib import Path
 from pydantic_settings import BaseSettings
 
 
+class AuthMethod(str, Enum):
+    """Authentication method for Claude API."""
+    PRO_SUBSCRIPTION = "pro_subscription"  # Claude Pro/Max subscription via OAuth
+    API_KEY = "api_key"  # Direct API key
+
+
 class Settings(BaseSettings):
-    anthropic_api_key: str = ""
+    anthropic_api_key: str = "sk-dummy-key"
+    # User preference: "pro" for Pro subscription first, "api" for API key first
+    auth_preference: str = "pro"
 
 
 BASE_DATA_DIR: Path = Path.cwd().resolve()
+
+
+def check_pro_subscription_available() -> bool:
+    """
+    Check if Claude Pro subscription authentication is available.
+
+    This checks if the user has authenticated via `claude login` command
+    which stores OAuth credentials locally.
+    """
+    # Check for Claude CLI config directory with stored credentials
+    claude_config_dir = os.environ.get("CLAUDE_CONFIG_DIR")
+    claude_config_paths = [
+        Path.home() / ".claude" / "credentials.json",
+        Path.home() / ".config" / "claude" / "credentials.json",
+    ]
+    if claude_config_dir:
+        claude_config_paths.append(Path(claude_config_dir) / "credentials.json")
+
+    for config_path in claude_config_paths:
+        if config_path.exists():
+            return True
+
+    return False
+
+
+def get_auth_method() -> tuple[AuthMethod, str | None]:
+    """
+    Determine the best authentication method available.
+
+    Returns:
+        Tuple of (AuthMethod, api_key or None)
+
+    Priority (based on auth_preference):
+    1. If preference is "pro": Try Pro subscription first, then API key
+    2. If preference is "api": Try API key first, then Pro subscription
+    """
+    settings = get_settings()
+    api_key = settings.anthropic_api_key
+    api_key_clean = api_key.strip() if api_key else ""
+    pro_available = check_pro_subscription_available()
+
+    if settings.auth_preference.lower() == "pro":
+        # Pro subscription first (user's preferred method)
+        if pro_available:
+            return AuthMethod.PRO_SUBSCRIPTION, None
+        elif api_key_clean:
+            return AuthMethod.API_KEY, api_key_clean
+    else:
+        # API key first
+        if api_key_clean:
+            return AuthMethod.API_KEY, api_key_clean
+        elif pro_available:
+            return AuthMethod.PRO_SUBSCRIPTION, None
+
+    # Neither available
+    raise ValueError(
+        "No authentication method available. "
+        "Option 1 (recommended): use your Claude Pro subscription "
+        "(run: 'claude login'). "
+        "Option 2: use an API key "
+        "(set: export ANTHROPIC_API_KEY='your-api-key')."
+    )
 
 
 def get_settings() -> Settings:
@@ -39,6 +112,8 @@ def sanitize_path(path: str | Path) -> Path:
         )
 
     return candidate
+
+
 def setup_logging(level: int = logging.INFO) -> None:
     """Configure logging for the application."""
     logging.basicConfig(
