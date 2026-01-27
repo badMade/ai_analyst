@@ -10,14 +10,14 @@ from unittest.mock import MagicMock
 mock_anthropic = MagicMock()
 sys.modules["anthropic"] = mock_anthropic
 
-# Ensure src is in path
+# Ensure src is in path for local execution
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
 try:
-    from analyst import StandaloneAnalyst
+    from ai_analyst.analyst import StandaloneAnalyst
 except ImportError:
     sys.path.append(os.getcwd())
-    from analyst import StandaloneAnalyst
+    from ai_analyst.analyst import StandaloneAnalyst
 
 def benchmark():
     print("Generating synthetic data (1000 cols, 10000 rows)...")

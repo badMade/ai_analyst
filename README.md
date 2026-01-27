@@ -15,30 +15,23 @@ pip install -e .
 export ANTHROPIC_API_KEY="your-key"
 
 # 4. Run analysis
-python run.py analyze data/sample_sales.csv -q "What are the sales trends by region?"
-```
-
-**Or without installation:**
-
-```bash
-pip install anthropic pandas numpy scipy pydantic pydantic-settings rich click openpyxl pyarrow
-python run.py analyze your_data.csv
+ai-analyst analyze data/sample_sales.csv -q "What are the sales trends by region?"
 ```
 
 ## Commands
 
 ```bash
 # Single analysis
-python run.py analyze data.csv -q "Summarize key statistics"
+ai-analyst analyze data.csv -q "Summarize key statistics"
 
 # Interactive REPL session
-python run.py interactive data.csv
+ai-analyst interactive data.csv
 
 # Quick data inspection
-python run.py inspect data.csv
+ai-analyst inspect data.csv
 
 # Show help
-python run.py --help
+ai-analyst --help
 ```
 
 ## Python API
@@ -109,9 +102,9 @@ The Codex automation responds to GitHub comments containing `@codex-agent` and c
 ```
 ai-analyst/
 ├── run.py                  # Standalone runner
-├── analyst.py              # Core standalone analyst
-├── interactive.py          # REPL mode
 ├── src/ai_analyst/
+│   ├── analyst.py          # Core standalone analyst
+│   ├── interactive.py      # REPL mode
 │   ├── cli.py              # Click CLI
 │   ├── tools/statistical.py
 │   └── utils/config.py
@@ -131,7 +124,7 @@ cp -r ai-analyst ~/mothership/apps/
 pip install -e ~/mothership/apps/ai-analyst
 
 # Import in your code
-from analyst import StandaloneAnalyst
+from ai_analyst.analyst import StandaloneAnalyst
 ```
 
 **Optional MCP mode** (for server integration):
