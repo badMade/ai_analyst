@@ -24,17 +24,23 @@ class TestEndToEndAnalysis:
         quantities = [(i % 10) + 1 for i in range(num_rows)]
         prices = [10.0 + (i % 5) * 2.5 for i in range(num_rows)]
 
+        categories = [f"Category {i % 3}" for i in range(num_rows)]
+        revenues = [quantity * price for quantity, price in zip(quantities, prices)]
+
         df = pd.DataFrame(
             {
                 "order_id": list(range(1, num_rows + 1)),
                 "product": products,
+                "category": categories,
                 "quantity": quantities,
                 "price": prices,
+                "revenue": revenues,
             }
         )
 
         df.to_csv(csv_path, index=False)
         return str(csv_path)
+
     @pytest.fixture
     def analyst_with_mock_api(self, mock_settings):
         """Create analyst with mocked API client."""
