@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import subprocess
 from enum import Enum
 from pathlib import Path
@@ -94,6 +95,10 @@ def sanitize_path(path: str | Path) -> Path:
     All non-absolute paths are resolved relative to BASE_DATA_DIR, and the
     final resolved path must remain within BASE_DATA_DIR.
     """
+    raw_value = str(path)
+    if os.name != "nt" and re.match(r"^[A-Za-z]:[\\/]", raw_value):
+        raise ValueError(f"Windows-style paths are not allowed: {raw_value}")
+
     raw_path: Path = Path(path)
 
     if raw_path.is_absolute():

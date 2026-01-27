@@ -4,6 +4,7 @@ Tests for configuration and settings.
 Tests the Settings class, environment variable handling, and utility functions.
 """
 
+import os
 from pathlib import Path
 
 import pytest

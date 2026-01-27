@@ -459,11 +459,11 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                     "total_rows": total_rows,
                     "total_columns": len(df.columns),
                     "null_cells": int(null_cells),
-                    "null_percentage": null_percentage,
+                    "null_percentage": round(null_percentage, 2),
                     "duplicate_rows": int(duplicate_rows),
-                    "duplicate_percentage": duplicate_percentage,
+                    "duplicate_percentage": round(duplicate_percentage, 2),
                     "column_issues": column_issues,
-                    "quality_score": quality_score
+                    "quality_score": round(quality_score, 2)
                 }
             
             elif tool_name == "test_normality":
