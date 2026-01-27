@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class LearningConfig(AgentConfig):
     """Configuration for learning agents."""
-    learning_rate: float = 0.0001
+    learning_rate: float = 0.001
     batch_size: int = 32
     epochs: int = 100
     optimizer: str = "adam"
