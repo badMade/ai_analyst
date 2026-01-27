@@ -263,11 +263,19 @@ class Executor:
                     retries=retries,
                 )
 
-            except TimeoutError:
-                last_error = "Execution timed out"
-                logger.warning(
-                    f"Action {context.action_name} timed out (attempt {retries + 1})"
-                )
+    def _execute_with_timeout(
+        self,
+        action: Callable,
+        parameters: dict[str, Any],
+        timeout: float,
+    ) -> Any:
+        """Execute action with timeout (synchronous)."""
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(action, **parameters)
+            try:
+                return future.result(timeout=timeout)
+            except concurrent.futures.TimeoutError:
+                raise TimeoutError("Synchronous action timed out")
 
             except Exception as e:
                 last_error = str(e)
