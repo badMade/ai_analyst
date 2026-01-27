@@ -77,8 +77,7 @@ class TestSanitizePath:
         assert result == base_dir
 
     def test_sanitize_windows_style_path(self, base_dir):
-        """Should reject Windows-style paths."""
-
+        """Should handle Windows-style paths on any platform."""
         with pytest.raises(ValueError):
             sanitize_path("C:\\Users\\data.csv")
 
