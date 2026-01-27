@@ -170,7 +170,32 @@ class Reasoner:
             return None
 
         # Check for valid syllogism patterns
-        conclusion_text = self._apply_deduction_rules(premises)
+    def _apply_deduction_rules(self, premises: list[Premise]) -> str | None:
+        """Apply deduction rules to premises.
+
+        This method needs to be expanded to implement actual logical inference rules
+        (e.g., Modus Ponens, Modus Tollens, Syllogisms) based on the provided premises.
+        """
+        # Placeholder for actual deductive logic
+        if not premises:
+            return None
+
+        # Example: Very basic Modus Ponens pattern
+        # If we have "If P then Q" and "P is true", we can conclude "Q is true".
+        for p1 in premises:
+            for p2 in premises:
+                if "If " in p1.statement and " then " in p1.statement:
+                    parts = p1.statement.replace("If ", "").split(" then ")
+                    if len(parts) == 2:
+                        antecedent = parts[0].strip()
+                        consequent = parts[1].strip()
+
+                        if antecedent in p2.statement: # Simplistic check for P being true
+                            return f"{consequent} is true"
+
+        if len(premises) >= 2:
+            return f"A general conclusion can be derived from {len(premises)} premises."
+        return None
         if conclusion_text:
             confidence = min(p.confidence for p in premises)
             return Conclusion(
