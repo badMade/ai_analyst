@@ -9,6 +9,14 @@ import numpy as np
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def base_data_dir(tmp_path, monkeypatch):
+    """Ensure BASE_DATA_DIR points to a temporary directory for tests."""
+    from ai_analyst.utils import config
+
+    monkeypatch.setattr(config, "BASE_DATA_DIR", tmp_path.resolve())
+
+
 @pytest.fixture
 def sample_dataframe():
     """Create a sample DataFrame for testing."""
