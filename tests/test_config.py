@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pytest
 
+from ai_analyst.utils.config import sanitize_path
 
 class TestSettings:
     """Tests for Settings class."""
@@ -40,69 +41,51 @@ class TestSettings:
 class TestSanitizePath:
     """Tests for sanitize_path utility function."""
 
-    def test_sanitize_string_path(self, tmp_path, monkeypatch):
-        """Should convert string to Path object within the base directory."""
-        from ai_analyst.utils import config
-
-        monkeypatch.setattr(config, "BASE_DATA_DIR", tmp_path)
-        target = tmp_path / "data.csv"
-
-        result = config.sanitize_path(str(target))
-        assert isinstance(result, Path)
-        assert result == target.resolve()
-
-    def test_sanitize_relative_path(self, tmp_path, monkeypatch):
-        """Should handle relative paths anchored to base directory."""
-        from ai_analyst.utils import config
-
-        monkeypatch.setattr(config, "BASE_DATA_DIR", tmp_path)
-        result = config.sanitize_path("data/file.csv")
-        assert isinstance(result, Path)
-        assert result == (tmp_path / "data" / "file.csv").resolve()
-
-    def test_sanitize_path_with_spaces(self, tmp_path, monkeypatch):
-        """Should handle paths with spaces."""
-        from ai_analyst.utils import config
-
-        monkeypatch.setattr(config, "BASE_DATA_DIR", tmp_path)
-        target = tmp_path / "my data" / "file.csv"
-
-        result = config.sanitize_path(str(target))
-        assert isinstance(result, Path)
-        assert "my data" in str(result)
-
-    def test_sanitize_empty_path(self, tmp_path, monkeypatch):
-        """Should handle empty string path."""
-        from ai_analyst.utils import config
-
-        monkeypatch.setattr(config, "BASE_DATA_DIR", tmp_path)
-        result = config.sanitize_path("")
-        assert isinstance(result, Path)
-        assert result == tmp_path.resolve()
-
-    def test_rejects_path_outside_base(self, tmp_path, monkeypatch):
-        """Should reject paths that resolve outside of base directory."""
+    @pytest.fixture
+    def base_dir(self, tmp_path, monkeypatch):
+        """Fixture to set up a temporary BASE_DATA_DIR and patch it."""
         from ai_analyst.utils import config
 
         base_dir = tmp_path / "base"
         base_dir.mkdir()
-        monkeypatch.setattr(config, "BASE_DATA_DIR", base_dir)
+        resolved_base_dir = base_dir.resolve()
+        monkeypatch.setattr(config, "BASE_DATA_DIR", resolved_base_dir)
+        return resolved_base_dir
 
+    def test_sanitize_string_path(self, base_dir):
+        """Should convert string to Path object."""
+        result = sanitize_path(str(base_dir / "data.csv"))
+        assert isinstance(result, Path)
+        assert result == base_dir / "data.csv"
+
+    def test_sanitize_relative_path(self, base_dir):
+        """Should handle relative paths."""
+        result = sanitize_path("data/file.csv")
+        assert isinstance(result, Path)
+        assert result == base_dir / "data" / "file.csv"
+
+    def test_sanitize_path_with_spaces(self, base_dir):
+        """Should handle paths with spaces."""
+        result = sanitize_path(str(base_dir / "my data" / "file.csv"))
+        assert isinstance(result, Path)
+        assert result == base_dir / "my data" / "file.csv"
+
+    def test_sanitize_empty_path(self, base_dir):
+        """Should handle empty string path."""
+        result = sanitize_path("")
+        assert isinstance(result, Path)
+        assert result == base_dir
+
+    def test_sanitize_windows_style_path(self, base_dir):
+        """Should handle Windows-style paths on any platform."""
         with pytest.raises(ValueError):
-            config.sanitize_path("../outside.csv")
+            sanitize_path("C:\\Users\\data.csv")
 
-    def test_sanitize_windows_style_path(self, tmp_path, monkeypatch):
-        """Should reject Windows-style paths on non-Windows systems."""
-        from ai_analyst.utils import config
-
-        monkeypatch.setattr(config, "BASE_DATA_DIR", tmp_path)
-
-        if os.name == "nt":
-            result = config.sanitize_path("C:\\Users\\data.csv")
-            assert isinstance(result, Path)
-        else:
-            with pytest.raises(ValueError):
-                config.sanitize_path("C:\\Users\\data.csv")
+    def test_sanitize_path_rejects_outside_base(self, base_dir):
+        """Should reject paths outside of base directory."""
+        outside_path = base_dir.parent / "outside.csv"
+        with pytest.raises(ValueError):
+            sanitize_path(outside_path)
 
 
 class TestEnvironmentConfiguration:
