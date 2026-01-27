@@ -41,9 +41,6 @@ ai_analyst/
 │   ├── test_statistical.py     # Statistical tools tests
 │   └── test_integration.py     # Integration tests
 │
-├── data/                       # Sample data files
-│   └── sample_sales.csv
-│
 ├── .github/
 │   ├── workflows/              # CI/CD workflows
 │   │   ├── claude.yml          # Claude Code assistant & agent
@@ -156,8 +153,6 @@ python run.py auth
 |----------|-------------|---------|
 | `ANTHROPIC_API_KEY` | API key (fallback if Pro not available) | - |
 | `AUTH_PREFERENCE` | Authentication priority: `pro` or `api` | `pro` |
-| `AI_ANALYST_MODEL` | Claude model to use | `claude-sonnet-4-20250514` |
-| `AI_ANALYST_LOG_LEVEL` | Logging verbosity (DEBUG, INFO, WARNING, ERROR) | INFO |
 
 ### CLI Commands
 
