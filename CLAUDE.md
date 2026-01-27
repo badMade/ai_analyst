@@ -13,9 +13,9 @@ AI Analyst is a Python-based tool that leverages Claude for intelligent data ana
 
 ai-analyst/
 ├── run.py                  # CLI entry point
-├── analyst.py              # Core standalone analyst
-├── interactive.py          # REPL mode
 ├── src/ai_analyst/
+│   ├── analyst.py          # Core standalone analyst
+│   ├── interactive.py      # REPL mode
 │   ├── cli.py              # Click CLI commands
 │   ├── tools/statistical.py
 │   └── utils/config.py     # Settings and authentication
@@ -61,7 +61,7 @@ export AUTH_PREFERENCE=pro  # Use Pro subscription first (default)
 
 Check your authentication status:
 ```bash
-python run.py auth
+ai-analyst auth
 ```
 
 ### Environment Variables
@@ -77,8 +77,8 @@ python run.py auth
 
 ## Key Files
 
-- **analyst.py**: Contains the main `AIAnalyst` class that handles data loading, Claude API interactions, and analysis generation
-- **interactive.py**: Implements the REPL interface for interactive data exploration
+- **ai_analyst/analyst.py**: Contains the main `AIAnalyst` class that handles data loading, Claude API interactions, and analysis generation
+- **ai_analyst/interactive.py**: Implements the REPL interface for interactive data exploration
 - **run.py**: CLI entry point using Click framework
 
 ## PR Review Guidelines
