@@ -63,7 +63,13 @@ def run_single_agent_demo():
         result = agent.step(observation)
 
         # Map agent decision to environment action
-        action = _map_to_env_action(result)
+def _map_to_env_action(result: dict) -> str:
+    """Map agent result to environment action."""
+    agent_action_type = result.get("action", "stay") # Get agent's intended action
+    import random
+    if agent_action_type in ["random_move", "explore"]:
+        return random.choice(["move_up", "move_down", "move_left", "move_right"])
+    return agent_action_type if agent_action_type in ["move_up", "move_down", "move_left", "move_right", "collect", "interact", "stay"] else "stay"
 
         # Execute in environment
         step_result = env.step(action)
