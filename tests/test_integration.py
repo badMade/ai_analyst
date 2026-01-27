@@ -25,15 +25,18 @@ class TestEndToEndAnalysis:
         prices = [10.0 + (i % 5) * 2.5 for i in range(num_rows)]
         categories = [f"Category {i % 3}" for i in range(num_rows)]
 
+        categories = [f"Category {i % 3}" for i in range(num_rows)]
+        revenues = [quantity * price for quantity, price in zip(quantities, prices)]
         df = pd.DataFrame(
             {
                 "order_id": list(range(1, num_rows + 1)),
                 "product": products,
+                "category": categories,
                 "quantity": quantities,
                 "price": prices,
-                "category": categories,
             }
         )
+        df["revenue"] = df["quantity"] * df["price"]
         df["revenue"] = df["quantity"] * df["price"]
 
         df.to_csv(csv_path, index=False)
