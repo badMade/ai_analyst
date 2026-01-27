@@ -1,57 +1,120 @@
+"""
+Shared test fixtures for AI Analyst tests.
+"""
+
+from unittest.mock import MagicMock, patch
+
+import pandas as pd
+import numpy as np
 import pytest
-from pathlib import Path
-from ai_analyst.utils import config
-from unittest.mock import patch, MagicMock
+
 
 @pytest.fixture(autouse=True)
-def override_base_data_dir(tmp_path: Path):
-    """
-    Fixture to override the BASE_DATA_DIR to a temporary directory for all tests.
-    This prevents tests from failing due to path sanitization.
-    """
-    original_dir = config.BASE_DATA_DIR
-    config.BASE_DATA_DIR = tmp_path
-    yield
-    config.BASE_DATA_DIR = original_dir
+def base_data_dir(tmp_path, monkeypatch):
+    """Ensure BASE_DATA_DIR points to a temporary directory for tests."""
+    from ai_analyst.utils import config
+
+    monkeypatch.setattr(config, "BASE_DATA_DIR", tmp_path.resolve())
+
 
 @pytest.fixture
-def mock_settings(monkeypatch):
-    """Mock get_settings to return a dummy key."""
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test-key")
-    yield
+def sample_dataframe():
+    """Create a sample DataFrame for testing."""
+    np.random.seed(42)
+    return pd.DataFrame({
+        "id": range(1, 101),
+        "category": np.random.choice(["A", "B", "C"], 100),
+        "value": np.random.randn(100) * 100 + 500,
+        "count": np.random.randint(1, 50, 100),
+        "date": pd.date_range("2024-01-01", periods=100, freq="D"),
+    })
+
 
 @pytest.fixture
-def analyst(mock_settings):
-    """Create analyst with mocked client."""
+def sample_dataframe_with_nulls():
+    """Create a sample DataFrame with null values for testing data quality."""
+    np.random.seed(42)
+    df = pd.DataFrame({
+        "id": range(1, 51),
+        "name": ["Item " + str(i) for i in range(1, 51)],
+        "value": np.random.randn(50) * 100 + 500,
+        "category": np.random.choice(["X", "Y", "Z"], 50),
+    })
+    # Add some null values
+    df.loc[5:10, "value"] = np.nan
+    df.loc[15:18, "category"] = None
+    return df
+
+
+@pytest.fixture
+def sample_dataframe_with_outliers():
+    """Create a DataFrame with known outliers for testing."""
+    np.random.seed(42)
+    values = np.random.randn(100) * 10 + 50
+    # Add clear outliers
+    values[0] = 200  # Upper outlier
+    values[1] = -100  # Lower outlier
+    values[2] = 250  # Upper outlier
+    return pd.DataFrame({
+        "id": range(1, 101),
+        "value": values,
+    })
+
+
+@pytest.fixture
+def sample_csv_file(tmp_path, sample_dataframe):
+    """Create a temporary CSV file for testing."""
+    csv_path = tmp_path / "test_data.csv"
+    sample_dataframe.to_csv(csv_path, index=False)
+    return str(csv_path)
+
+
+@pytest.fixture
+def sample_json_file(tmp_path, sample_dataframe):
+    """Create a temporary JSON file for testing."""
+    json_path = tmp_path / "test_data.json"
+    sample_dataframe.to_json(json_path, orient="records", date_format="iso")
+    return str(json_path)
+
+
+@pytest.fixture
+def sample_excel_file(tmp_path, sample_dataframe):
+    """Create a temporary Excel file for testing."""
+    excel_path = tmp_path / "test_data.xlsx"
+    sample_dataframe.to_excel(excel_path, index=False)
+    return str(excel_path)
+
+
+@pytest.fixture
+def sample_parquet_file(tmp_path, sample_dataframe):
+    """Create a temporary Parquet file for testing."""
+    parquet_path = tmp_path / "test_data.parquet"
+    sample_dataframe.to_parquet(parquet_path, index=False)
+    return str(parquet_path)
+
+
+@pytest.fixture
+def mock_anthropic_client():
+    """Create a mock Anthropic client for testing without API calls."""
     with patch("anthropic.Anthropic") as mock_client_class:
-        from analyst import StandaloneAnalyst
+        mock_client = MagicMock()
+        mock_client_class.return_value = mock_client
+        yield mock_client
 
-        analyst = StandaloneAnalyst()
-        analyst.client = MagicMock()
-        return analyst
-
-@pytest.fixture
-def analyst_with_data(analyst, sample_csv_file):
-    """Create analyst with loaded dataset."""
-    analyst.context.load_dataset(str(sample_csv_file), "test_data")
-    return analyst
-
-@pytest.fixture
-def sample_csv_file(tmp_path):
-    """Create a sample CSV file for testing."""
-    file_path = tmp_path / "sample_data.csv"
-    file_path.write_text("id,name,value,category\n" + "\n".join([f"{i},{i*10},{i*100},{'A' if i % 2 == 0 else 'B'}" for i in range(100)]))
-    return file_path
 
 @pytest.fixture
 def mock_api_response_end_turn():
-    """Return a mock API response that ends the turn."""
-    response = MagicMock()
-    response.stop_reason = "end_turn"
-    text_block = MagicMock()
-    text_block.text = "Analysis complete. The data shows positive trends."
-    response.content = [text_block]
-    return response
+    """Create a mock API response that ends the turn (no tool use)."""
+    mock_response = MagicMock()
+    mock_response.stop_reason = "end_turn"
+
+    mock_text_block = MagicMock()
+    mock_text_block.text = "Analysis complete. The data shows positive trends."
+    mock_text_block.type = "text"
+
+    mock_response.content = [mock_text_block]
+    return mock_response
+
 
 @pytest.fixture
 def mock_api_response_tool_use():

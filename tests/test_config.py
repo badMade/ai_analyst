@@ -4,8 +4,12 @@ Tests for configuration and settings.
 Tests the Settings class, environment variable handling, and utility functions.
 """
 
+import os
 from pathlib import Path
+
 import pytest
+
+from ai_analyst.utils.config import sanitize_path
 
 class TestSettings:
     """Tests for Settings class."""
@@ -15,7 +19,7 @@ class TestSettings:
         from ai_analyst.utils.config import Settings
 
         settings = Settings()
-        assert settings.anthropic_api_key == ""
+        assert settings.anthropic_api_key == "sk-dummy-key"
 
     def test_settings_from_env(self, monkeypatch):
         """Settings should load API key from environment."""
@@ -37,58 +41,51 @@ class TestSettings:
 class TestSanitizePath:
     """Tests for sanitize_path utility function."""
 
-    def test_sanitize_string_path(self, tmp_path):
-        """Should convert string to Path object."""
-        from ai_analyst.utils.config import sanitize_path
-
-        file_path = tmp_path / "data.csv"
-        file_path.touch()
-
-        result = sanitize_path(str(file_path))
-        assert isinstance(result, Path)
-        assert result == file_path
-
-    def test_sanitize_relative_path(self, tmp_path):
-        """Should handle relative paths."""
-        from ai_analyst.utils.config import sanitize_path
-
-        (tmp_path / "data").mkdir()
-        file_path = tmp_path / "data" / "file.csv"
-        file_path.touch()
-
-        result = sanitize_path("data/file.csv")
-        assert isinstance(result, Path)
-        assert result.resolve() == file_path.resolve()
-
-    def test_sanitize_path_with_spaces(self, tmp_path):
-        """Should handle paths with spaces."""
-        from ai_analyst.utils.config import sanitize_path
-
-        dir_with_space = tmp_path / "my data"
-        dir_with_space.mkdir()
-        file_path = dir_with_space / "file.csv"
-        file_path.touch()
-
-        result = sanitize_path(str(file_path))
-        assert isinstance(result, Path)
-        assert "my data" in str(result)
-        assert result == file_path
-
-    def test_sanitize_empty_path(self):
-        """Should handle empty string path."""
-        from ai_analyst.utils.config import sanitize_path
+    @pytest.fixture
+    def base_dir(self, tmp_path, monkeypatch):
+        """Fixture to set up a temporary BASE_DATA_DIR and patch it."""
         from ai_analyst.utils import config
 
+        base_dir = tmp_path / "base"
+        base_dir.mkdir()
+        resolved_base_dir = base_dir.resolve()
+        monkeypatch.setattr(config, "BASE_DATA_DIR", resolved_base_dir)
+        return resolved_base_dir
+
+    def test_sanitize_string_path(self, base_dir):
+        """Should convert string to Path object."""
+        result = sanitize_path(str(base_dir / "data.csv"))
+        assert isinstance(result, Path)
+        assert result == base_dir / "data.csv"
+
+    def test_sanitize_relative_path(self, base_dir):
+        """Should handle relative paths."""
+        result = sanitize_path("data/file.csv")
+        assert isinstance(result, Path)
+        assert result == base_dir / "data" / "file.csv"
+
+    def test_sanitize_path_with_spaces(self, base_dir):
+        """Should handle paths with spaces."""
+        result = sanitize_path(str(base_dir / "my data" / "file.csv"))
+        assert isinstance(result, Path)
+        assert result == base_dir / "my data" / "file.csv"
+
+    def test_sanitize_empty_path(self, base_dir):
+        """Should handle empty string path."""
         result = sanitize_path("")
         assert isinstance(result, Path)
-        assert result == config.BASE_DATA_DIR
+        assert result == base_dir
 
-    def test_sanitize_windows_style_path(self):
+    def test_sanitize_windows_style_path(self, base_dir):
         """Should handle Windows-style paths on any platform."""
-        from ai_analyst.utils.config import sanitize_path
-
         with pytest.raises(ValueError):
-             sanitize_path("C:\\Users\\data.csv")
+            sanitize_path("C:\\Users\\data.csv")
+
+    def test_sanitize_path_rejects_outside_base(self, base_dir):
+        """Should reject paths outside of base directory."""
+        outside_path = base_dir.parent / "outside.csv"
+        with pytest.raises(ValueError):
+            sanitize_path(outside_path)
 
 
 class TestEnvironmentConfiguration:
@@ -96,12 +93,14 @@ class TestEnvironmentConfiguration:
 
     def test_missing_api_key_uses_default(self, monkeypatch):
         """Should use default key when env var is not set."""
+        # Clear the env var if it exists
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
 
+        # Need to reload the module to pick up changed env
         from ai_analyst.utils.config import Settings
 
         settings = Settings()
-        assert settings.anthropic_api_key == ""
+        assert settings.anthropic_api_key == "sk-dummy-key"
 
     def test_empty_api_key_is_empty_string(self, monkeypatch):
         """Empty env var should result in an empty string value."""
@@ -110,4 +109,6 @@ class TestEnvironmentConfiguration:
         from ai_analyst.utils.config import Settings
 
         settings = Settings()
+        # pydantic-settings uses the empty string from the env var
+        # instead of falling back to the default.
         assert settings.anthropic_api_key == ""

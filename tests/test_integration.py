@@ -23,15 +23,21 @@ class TestEndToEndAnalysis:
         products = [f"Product {i % 5}" for i in range(num_rows)]
         quantities = [(i % 10) + 1 for i in range(num_rows)]
         prices = [10.0 + (i % 5) * 2.5 for i in range(num_rows)]
+        categories = [f"Category {i % 3}" for i in range(num_rows)]
 
+        categories = [f"Category {i % 3}" for i in range(num_rows)]
+        revenues = [quantity * price for quantity, price in zip(quantities, prices)]
         df = pd.DataFrame(
             {
                 "order_id": list(range(1, num_rows + 1)),
                 "product": products,
+                "category": categories,
                 "quantity": quantities,
                 "price": prices,
             }
         )
+        df["revenue"] = df["quantity"] * df["price"]
+        df["revenue"] = df["quantity"] * df["price"]
 
         df.to_csv(csv_path, index=False)
         return str(csv_path)
@@ -146,13 +152,13 @@ class TestEndToEndAnalysis:
         # Group analysis
         group_result = analyst._execute_tool("group_analysis", {
             "dataset_name": "sales",
-            "group_by": "product",
-            "agg_column": "quantity"
+            "group_by": "category",
+            "agg_column": "revenue"
         })
         group_data = json.loads(group_result)
 
-        assert group_data["group_by"] == "product"
-        assert group_data["agg_column"] == "quantity"
+        assert group_data["group_by"] == "category"
+        assert group_data["agg_column"] == "revenue"
         assert group_data["n_groups"] > 0
 
     def test_outlier_detection_workflow(self, analyst_with_mock_api, sample_sales_file):
@@ -168,7 +174,7 @@ class TestEndToEndAnalysis:
         # Detect outliers
         outlier_result = analyst._execute_tool("detect_outliers", {
             "dataset_name": "sales",
-            "column": "price",
+            "column": "revenue",
             "method": "iqr"
         })
         outlier_data = json.loads(outlier_result)
@@ -190,7 +196,7 @@ class TestEndToEndAnalysis:
         # Analyze trend
         trend_result = analyst._execute_tool("analyze_trend", {
             "dataset_name": "sales",
-            "column": "quantity"
+            "column": "revenue"
         })
         trend_data = json.loads(trend_result)
 
@@ -199,6 +205,15 @@ class TestEndToEndAnalysis:
 
 class TestMultipleDatasets:
     """Tests for working with multiple datasets."""
+
+    @pytest.fixture
+    def analyst(self, mock_settings):
+        """Create analyst with mocked API."""
+        with patch("anthropic.Anthropic"):
+            from analyst import StandaloneAnalyst
+
+            analyst = StandaloneAnalyst()
+            return analyst
 
     def test_load_multiple_datasets(self, analyst, tmp_path):
         """Should be able to load and work with multiple datasets."""
@@ -262,6 +277,14 @@ class TestMultipleDatasets:
 class TestErrorHandling:
     """Tests for error handling in workflows."""
 
+    @pytest.fixture
+    def analyst(self, mock_settings):
+        """Create analyst with mocked API."""
+        with patch("anthropic.Anthropic"):
+            from analyst import StandaloneAnalyst
+
+            return StandaloneAnalyst()
+
     def test_error_on_missing_dataset(self, analyst):
         """Should return error for operations on missing dataset."""
         result = analyst._execute_tool("preview_data", {
@@ -302,6 +325,14 @@ class TestErrorHandling:
 
 class TestDataWithNulls:
     """Tests for handling data with null values."""
+
+    @pytest.fixture
+    def analyst(self, mock_settings):
+        """Create analyst."""
+        with patch("anthropic.Anthropic"):
+            from analyst import StandaloneAnalyst
+
+            return StandaloneAnalyst()
 
     def test_quality_check_detects_nulls(self, analyst, tmp_path):
         """Quality check should detect null values."""
@@ -345,6 +376,14 @@ class TestDataWithNulls:
 
 class TestDuplicateDetection:
     """Tests for duplicate row detection."""
+
+    @pytest.fixture
+    def analyst(self, mock_settings):
+        """Create analyst."""
+        with patch("anthropic.Anthropic"):
+            from analyst import StandaloneAnalyst
+
+            return StandaloneAnalyst()
 
     def test_quality_check_detects_duplicates(self, analyst, tmp_path):
         """Quality check should detect duplicate rows."""
