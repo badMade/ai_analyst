@@ -2,7 +2,8 @@
 """
 Standalone runner for AI Analyst.
 
-Run after installing the package (e.g., pip install -e .):
+From the project root (source checkout), with your virtual environment
+activated, you can run:
     python run.py analyze data.csv
     python run.py interactive
     python run.py inspect data.csv
