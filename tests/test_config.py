@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pytest
 
+from ai_analyst.utils.config import sanitize_path
 
 class TestSettings:
     """Tests for Settings class."""
@@ -55,6 +56,8 @@ class TestSanitizePath:
         """Should convert string to Path object."""
         from ai_analyst.utils.config import sanitize_path
 
+    def test_sanitize_string_path(self, base_dir):
+        """Should convert string to Path object."""
         result = sanitize_path(str(base_dir / "data.csv"))
         assert isinstance(result, Path)
         assert result == base_dir / "data.csv"
