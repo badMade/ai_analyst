@@ -128,7 +128,15 @@ def list_repo_files(max_files: int) -> list[str]:
         print(f"Warning: Could not list repository files: {e}")
         return []
     files = [line.strip() for line in file_list.stdout.splitlines() if line.strip()]
-    allowed_extensions = (".py", ".js", ".ts", ".md", ".yml", ".yaml", ".toml", ".json")
+    allowed_extensions_env = os.environ.get("CODEX_AGENT_ALLOWED_EXTENSIONS")
+    if allowed_extensions_env is not None:
+        allowed_extensions = tuple(
+            ext.strip() for ext in allowed_extensions_env.split(",") if ext.strip()
+        )
+    else:
+        allowed_extensions = (".py", ".js", ".ts", ".md", ".yml", ".yaml", ".toml", ".json")
+    if not allowed_extensions:
+        return files[:max_files]
     filtered_files = [f for f in files if f.endswith(allowed_extensions)]
     return filtered_files[:max_files]
 
