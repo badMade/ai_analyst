@@ -141,7 +141,8 @@ export ANTHROPIC_API_KEY='your-api-key'
 #### Authentication Priority
 ```bash
 export AUTH_PREFERENCE=pro  # Use Pro subscription first (default)
-export AUTH_PREFERENCE=api  # Use API key first
+# To use API key first, uncomment the line below:
+# export AUTH_PREFERENCE=api
 ```
 
 Check authentication status:
