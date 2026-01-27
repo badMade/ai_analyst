@@ -286,6 +286,7 @@ This repository integrates multiple AI assistants for development and PR reviews
 | `@jules` | Jules coding agent |
 | `@chatgpt` | ChatGPT responds |
 | `@codex-agent` | Codex makes code changes |
+| `@codex` | Code-focused help |
 
 All PRs receive automated reviews from Claude, Gemini, and ChatGPT.
 
