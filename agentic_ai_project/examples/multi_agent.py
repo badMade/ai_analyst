@@ -84,7 +84,8 @@ def run_multi_agent_demo():
             }
 
             # Agent step
-            result = agent.step(perception)
+            # Agent step
+            result = agent.step(observation) # Pass raw observation as per BaseAgent interface
 
             # Simulate agent-specific behavior
             action = _get_agent_action(agent, perception)
