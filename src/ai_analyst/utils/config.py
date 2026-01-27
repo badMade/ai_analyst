@@ -96,7 +96,7 @@ def sanitize_path(path: str | Path) -> Path:
     """
     if os.name != "nt":
         path_str = str(path)
-        if len(path_str) >= 2 and path_str[1] == ":" and path_str[0].isalpha():
+        if len(path_str) > 2 and path_str[1] == ":" and path_str[0].isalpha() and path_str[2] in ("\\", "/"):
             logging.error(
                 "Refusing Windows-style path on non-Windows system: %s",
                 path_str,
