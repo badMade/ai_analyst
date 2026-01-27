@@ -3,7 +3,7 @@
 Standalone runner for AI Analyst.
 
 From the project root (source checkout), with your virtual environment
-activated, you can run:
+activated and dependencies installed, you can run:
     python run.py analyze data.csv
     python run.py interactive
     python run.py inspect data.csv
