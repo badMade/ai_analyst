@@ -1,0 +1,43 @@
+# Model Configuration
+# Defines AI model settings and parameters
+
+models:
+  default:
+    provider: anthropic
+    model_name: claude-sonnet-4-20250514
+    max_tokens: 4096
+    temperature: 0.7
+
+  reasoning:
+    provider: anthropic
+    model_name: claude-sonnet-4-20250514
+    max_tokens: 8192
+    temperature: 0.3
+    system_prompt: "You are a reasoning agent that thinks step by step."
+
+  creative:
+    provider: anthropic
+    model_name: claude-sonnet-4-20250514
+    max_tokens: 4096
+    temperature: 0.9
+
+# Embedding models for memory and retrieval
+embeddings:
+  provider: openai
+  model_name: text-embedding-3-small
+  dimensions: 1536
+  batch_size: 100
+
+# Local model settings (optional)
+local:
+  enabled: false
+  model_path: ./models/local_model
+  device: cuda
+  quantization: int8
+
+# API rate limiting
+rate_limits:
+  requests_per_minute: 60
+  tokens_per_minute: 100000
+  retry_delay: 1.0
+  max_retries: 3
