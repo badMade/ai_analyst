@@ -95,9 +95,17 @@ def sanitize_path(path: str | Path) -> Path:
     All non-absolute paths are resolved relative to BASE_DATA_DIR, and the
     final resolved path must remain within BASE_DATA_DIR.
     """
-    raw_value = str(path)
-    if os.name != "nt" and re.match(r"^[A-Za-z]:[\\/]", raw_value):
-        raise ValueError(f"Windows-style paths are not allowed: {raw_value}")
+    if os.name != "nt":
+        path_str = str(path)
+        if len(path_str) > 2 and path_str[1] == ":" and path_str[0].isalpha() and path_str[2] in ("\\", "/"):
+            logging.error(
+                "Refusing Windows-style path on non-Windows system: %s",
+                path_str,
+            )
+            raise ValueError(
+                "Invalid Windows-style path on non-Windows system: "
+                f"{path_str}"
+            )
 
     raw_path: Path = Path(path)
 
