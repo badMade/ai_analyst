@@ -101,7 +101,7 @@ The workflow in `.github/workflows/claude.yml` uses this secret for:
 The Codex automation responds to GitHub comments containing `@codex-agent` and can open a branch with applied changes.
 
 1. Create the repository secret `OPENAI_API_KEY`.
-2. (Optional) Set `OPENAI_MODEL` and `CODEX_AGENT_MAX_FILES` as Actions variables to control the model and context size.
+2. (Optional) Set `OPENAI_MODEL`, `CODEX_AGENT_MAX_FILES`, and `CODEX_AGENT_ALLOWED_EXTENSIONS` as Actions variables to control the model, context size, and file extensions included in context (comma-separated list like `.py,.go,.sql`).
 3. In an issue or PR comment, mention `@codex-agent` followed by your request.
 
 ## Project Structure

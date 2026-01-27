@@ -9,6 +9,9 @@ import re
 import subprocess
 
 from github import Github
+from github.Issue import Issue
+from github.PullRequest import PullRequest
+from github.Repository import Repository
 from openai import OpenAI
 
 
@@ -80,7 +83,7 @@ def git_commit_and_push(message: str, branch: str) -> bool:
         return False
 
 
-def resolve_issue_or_pr(repo: Github, event: dict) -> tuple:
+def resolve_issue_or_pr(repo: Repository, event: dict) -> tuple[Issue | PullRequest | None, str]:
     """Resolve the issue or PR object and comment body from the event."""
     comment_body = ""
     issue_or_pr = None
@@ -111,16 +114,29 @@ def get_author_association(event: dict) -> str:
     return ""
 
 
-def list_repo__files(max_files: int) -> list[str]:
+def list_repo_files(max_files: int) -> list[str]:
     """List tracked repository files for context."""
-    file_list = subprocess.run(
-        ["git", "ls-files"],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    files = [f for f in file_list.stdout.splitlines() if f]
-    allowed_extensions = tuple(e.strip() for e in os.environ.get("CODEX_AGENT_ALLOWED_EXTENSIONS", ".py,.js,.ts,.md,.yml,.yaml,.toml,.json").split(","))
+    max_files = max(1, max_files)
+    try:
+        file_list = subprocess.run(
+            ["git", "ls-files"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        print(f"Warning: Could not list repository files: {e}")
+        return []
+    files = [line.strip() for line in file_list.stdout.splitlines() if line.strip()]
+    allowed_extensions_env = os.environ.get("CODEX_AGENT_ALLOWED_EXTENSIONS")
+    if allowed_extensions_env is not None:
+        allowed_extensions = tuple(
+            ext.strip() for ext in allowed_extensions_env.split(",") if ext.strip()
+        )
+    else:
+        allowed_extensions = (".py", ".js", ".ts", ".md", ".yml", ".yaml", ".toml", ".json")
+    if not allowed_extensions:
+        return files[:max_files]
     filtered_files = [f for f in files if f.endswith(allowed_extensions)]
     return filtered_files[:max_files]
 
@@ -156,7 +172,7 @@ def main():
     # Validate author association as a defense-in-depth check
     author_association = get_author_association(event)
     allowed_associations = {"OWNER", "MEMBER", "COLLABORATOR"}
-    if author_association and author_association not in allowed_associations:
+    if not author_association or author_association not in allowed_associations:
         print(f"Unauthorized author association: {author_association}")
         return
 
@@ -165,8 +181,6 @@ def main():
     if not prompt:
         print("No prompt found after @codex-agent mention")
         return
-
-    # Get repository file structure
     try:
         max_files_to_show = int(os.environ.get("CODEX_AGENT_MAX_FILES", "50"))
     except ValueError:
@@ -191,14 +205,12 @@ When asked to make changes, provide your response in this JSON format:
 
 If no code changes are needed, set "changes" to an empty array and provide your response in "analysis"."""
 
-    files_for_context = files
-
     user_message = f"""Repository: {repo.full_name}
 Issue/PR: {issue_or_pr.title}
 Description: {issue_or_pr.body or 'No description'}
 
 Files in repository:
-{chr(10).join(files_for_context)}
+{chr(10).join(files)}
 
 User request: {prompt}
 
