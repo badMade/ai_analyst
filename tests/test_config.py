@@ -54,48 +54,35 @@ class TestSanitizePath:
 
     def test_sanitize_string_path(self, base_dir):
         """Should convert string to Path object."""
-        from ai_analyst.utils.config import sanitize_path
-
-    def test_sanitize_string_path(self, base_dir):
-        """Should convert string to Path object."""
         result = sanitize_path(str(base_dir / "data.csv"))
         assert isinstance(result, Path)
         assert result == base_dir / "data.csv"
 
     def test_sanitize_relative_path(self, base_dir):
         """Should handle relative paths."""
-        from ai_analyst.utils.config import sanitize_path
-
         result = sanitize_path("data/file.csv")
         assert isinstance(result, Path)
         assert result == base_dir / "data" / "file.csv"
 
     def test_sanitize_path_with_spaces(self, base_dir):
         """Should handle paths with spaces."""
-        from ai_analyst.utils.config import sanitize_path
-
         result = sanitize_path(str(base_dir / "my data" / "file.csv"))
         assert isinstance(result, Path)
         assert result == base_dir / "my data" / "file.csv"
 
     def test_sanitize_empty_path(self, base_dir):
         """Should handle empty string path."""
-        from ai_analyst.utils.config import sanitize_path
-
         result = sanitize_path("")
         assert isinstance(result, Path)
         assert result == base_dir
 
     def test_sanitize_windows_style_path(self, base_dir):
         """Should handle Windows-style paths on any platform."""
-        from ai_analyst.utils.config import sanitize_path
         with pytest.raises(ValueError):
             sanitize_path("C:\\Users\\data.csv")
 
     def test_sanitize_path_rejects_outside_base(self, base_dir):
         """Should reject paths outside of base directory."""
-        from ai_analyst.utils.config import sanitize_path
-
         outside_path = base_dir.parent / "outside.csv"
         with pytest.raises(ValueError):
             sanitize_path(outside_path)
