@@ -136,7 +136,7 @@ Be constructive and specific. Use inline code references where applicable."""
     try:
         # Generate review using Claude
         response = client.messages.create(
-            model=os.environ.get("CLAUDE_REVIEW_MODEL", "claude-3.5-sonnet-20240620"),
+            model=os.environ.get("CLAUDE_REVIEW_MODEL", "claude-sonnet-4-20250514"),
             max_tokens=2000,
             messages=[
                 {"role": "user", "content": user_prompt}
