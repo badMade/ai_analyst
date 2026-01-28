@@ -102,7 +102,8 @@ Provide a thorough code review covering:
 2. **Code Quality**: Evaluate readability, maintainability, and best practices
 3. **Potential Issues**: Bugs, edge cases, security concerns
 4. **Suggestions**: Specific improvements with code examples if helpful
-5. **Overall Assessment**: Approve, request changes, or comment
+5. **Implementation Details**: What are the steps, files and line numbers to make this change?
+6. **Overall Assessment**: Approve, request changes, or comment
 
 Format your response in GitHub-flavored markdown. Be constructive and specific.
 Use inline code references where applicable."""
