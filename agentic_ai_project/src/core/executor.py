@@ -374,9 +374,12 @@ class Executor:
     ) -> Any:
         """Execute action with timeout (synchronous)."""
         # Simple synchronous execution - timeout handled differently
-        return action(**parameters)
-
-    def _run_hooks(
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(action, **parameters)
+            try:
+                return future.result(timeout=timeout)
+            except concurrent.futures.TimeoutError:
+                raise TimeoutError("Synchronous action timed out")
         self,
         hooks: list[Callable],
         context: ExecutionContext,
