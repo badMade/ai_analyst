@@ -165,7 +165,7 @@ class Executor:
             List of execution results.
         """
         if parallel:
-            return asyncio.run(self._execute_batch_async(actions))
+            return await self._execute_batch_async(actions)
 
         results = []
         for action_name, params in actions:
