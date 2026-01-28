@@ -17,7 +17,7 @@ class TestStandaloneAnalystInit:
     def test_init_creates_client(self, mock_settings):
         """Should create Anthropic client on init."""
         with patch("anthropic.Anthropic") as mock_client:
-            from analyst import StandaloneAnalyst
+            from ai_analyst.analyst import StandaloneAnalyst
 
             StandaloneAnalyst()
 
@@ -26,7 +26,7 @@ class TestStandaloneAnalystInit:
     def test_init_uses_provided_model(self, mock_settings):
         """Should use the provided model name."""
         with patch("anthropic.Anthropic"):
-            from analyst import StandaloneAnalyst
+            from ai_analyst.analyst import StandaloneAnalyst
 
             analyst = StandaloneAnalyst(model="claude-3-opus-20240229")
 
@@ -35,8 +35,8 @@ class TestStandaloneAnalystInit:
     def test_init_creates_analysis_context(self, mock_settings):
         """Should create an AnalysisContext."""
         with patch("anthropic.Anthropic"):
-            from analyst import StandaloneAnalyst
-            from analyst import AnalysisContext
+            from ai_analyst.analyst import StandaloneAnalyst
+            from ai_analyst.analyst import AnalysisContext
 
             analyst = StandaloneAnalyst()
 
@@ -45,7 +45,7 @@ class TestStandaloneAnalystInit:
     def test_init_sets_max_iterations(self, mock_settings):
         """Should set max iterations limit."""
         with patch("anthropic.Anthropic"):
-            from analyst import StandaloneAnalyst
+            from ai_analyst.analyst import StandaloneAnalyst
 
             analyst = StandaloneAnalyst()
 
@@ -54,11 +54,11 @@ class TestStandaloneAnalystInit:
     def test_init_raises_without_api_key(self):
         """Should raise error if API key is not set."""
         # Need to patch where get_auth_method is used (in analyst module)
-        with patch("analyst.get_auth_method") as mock_get_auth_method:
+        with patch("ai_analyst.analyst.get_auth_method") as mock_get_auth_method:
             mock_get_auth_method.side_effect = ValueError("Missing ANTHROPIC_API_KEY")
 
             with patch("anthropic.Anthropic"):
-                from analyst import StandaloneAnalyst
+                from ai_analyst.analyst import StandaloneAnalyst
 
                 with pytest.raises(ValueError, match="ANTHROPIC_API_KEY"):
                     StandaloneAnalyst()
@@ -314,7 +314,7 @@ class TestCreateAnalyst:
     def test_create_analyst_returns_instance(self, mock_settings):
         """Should return StandaloneAnalyst instance."""
         with patch("anthropic.Anthropic"):
-            from analyst import create_analyst, StandaloneAnalyst
+            from ai_analyst.analyst import create_analyst, StandaloneAnalyst
 
             analyst = create_analyst()
 
@@ -323,7 +323,7 @@ class TestCreateAnalyst:
     def test_create_analyst_with_model(self, mock_settings):
         """Should pass model to constructor."""
         with patch("anthropic.Anthropic"):
-            from analyst import create_analyst
+            from ai_analyst.analyst import create_analyst
 
             analyst = create_analyst(model="claude-3-haiku-20240307")
 

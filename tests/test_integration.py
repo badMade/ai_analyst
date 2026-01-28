@@ -40,7 +40,7 @@ class TestEndToEndAnalysis:
     def analyst_with_mock_api(self, mock_settings):
         """Create analyst with mocked API client."""
         with patch("anthropic.Anthropic"):
-            from analyst import StandaloneAnalyst
+            from ai_analyst.analyst import StandaloneAnalyst
 
             analyst = StandaloneAnalyst()
             analyst.client = MagicMock()

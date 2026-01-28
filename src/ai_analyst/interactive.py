@@ -12,7 +12,7 @@ from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.prompt import Prompt
 
-from analyst import StandaloneAnalyst
+from ai_analyst.analyst import StandaloneAnalyst
 from ai_analyst.utils.config import setup_logging, get_auth_method, AuthMethod
 
 console = Console()
@@ -51,33 +51,33 @@ def run_interactive(
 
     analyst = StandaloneAnalyst(model=model)
     current_file = file_path
-    
+
     if current_file:
         console.print(f"\n[dim]Working with:[/dim] {current_file}")
-    
+
     while True:
         try:
             user_input = Prompt.ask("\n[bold blue]You[/bold blue]").strip()
-            
+
             if not user_input:
                 continue
-            
+
             # Handle commands
             if user_input.lower() in ["quit", "exit", "q"]:
                 console.print("\n[dim]Goodbye![/dim]")
                 break
-            
+
             if user_input.lower() == "clear":
                 console.clear()
                 continue
-            
+
             if user_input.lower() == "help":
                 console.print(
                     "Commands: load <file>, quit, clear, help\n"
                     "Or ask any analysis question."
                 )
                 continue
-            
+
             if user_input.lower().startswith("load "):
                 new_file = user_input[5:].strip()
                 if Path(new_file).exists():
@@ -86,15 +86,15 @@ def run_interactive(
                 else:
                     console.print(f"[red]File not found:[/red] {new_file}")
                 continue
-            
+
             # Run analysis
             console.print("[dim]Analyzing...[/dim]")
-            
+
             response = analyst.analyze(user_input, current_file)
-            
+
             console.print("\n[bold green]Analyst[/bold green]")
             console.print(Markdown(response))
-        
+
         except KeyboardInterrupt:
             console.print("\n[dim]Use 'quit' to exit[/dim]")
         except Exception as e:
