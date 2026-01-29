@@ -10,7 +10,7 @@ from unittest.mock import MagicMock
 mock_anthropic = MagicMock()
 sys.modules["anthropic"] = mock_anthropic
 
-# Ensure src is in path
+# Ensure src is in path for local execution
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
 try:
