@@ -262,7 +262,15 @@ class DecisionMaker:
                 if criterion.name in option.criteria_scores:
                     value = option.criteria_scores[criterion.name]
                     if criterion.minimize:
-                        value = 1.0 - value  # Invert for minimization
+                    if criterion.minimize:
+                        if not (0.0 <= value <= 1.0):
+                            logger.warning(
+                                f"Criterion '{criterion.name}' score '{value}' "
+                                "is outside expected [0, 1] range for minimization. "
+                                "Clamping to [0, 1] before inversion."
+                            )
+                        # Clamp value to [0, 1] before inversion to ensure correct behavior
+                        value = 1.0 - max(0.0, min(1.0, value))
                     score += value * criterion.weight
 
             return score / total_weight if total_weight > 0 else 0.0
