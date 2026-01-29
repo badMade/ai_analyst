@@ -308,8 +308,19 @@ class EpisodicMemory:
     def _compute_similarity(self, hash1: str, hash2: str) -> float:
         """Compute similarity between hashes."""
         # Simple character overlap
-        common = sum(c1 == c2 for c1, c2 in zip(hash1, hash2))
-        return common / max(len(hash1), len(hash2))
+```python
+    def _compute_similarity(self, hash1: str, hash2: str) -> float:
+        # Cosine similarity of state embeddings
+        from sklearn.metrics.pairwise import cosine_similarity
+
+        embedding1 = self.get_embedding(hash1) # Get embedding for hash1
+        embedding2 = self.get_embedding(hash2) # Get embedding for hash2
+
+        #Need to reshape the embeddings to a 2D array
+        embedding1 = embedding1.reshape(1, -1)
+        embedding2 = embedding2.reshape(1, -1)
+
+        return cosine_similarity(embedding1, embedding2)[0][0]
 
 
 class Memory:
