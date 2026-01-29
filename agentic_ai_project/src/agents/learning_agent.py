@@ -270,7 +270,212 @@ class LearningAgent(BaseAgent):
     def _predict(self, state: Any) -> np.ndarray:
         """Get action values from model."""
         # Placeholder - implement actual model prediction
-        return np.random.rand(4)
+    def __init__(
+        self,
+        name: str | None = None,
+        config: LearningConfig | None = None,
+        model: Any = None,
+        action_space_size: int = 4, # Default for placeholder, but should be set dynamically
+    ):
+        """Initialize the learning agent.
+
+        Args:
+            name: Optional name for the agent.
+            config: Configuration settings.
+            model: Optional pre-trained model.
+            action_space_size: The size of the environment's action space.
+        """
+        super().__init__(name, config or LearningConfig())
+        self.config: LearningConfig = self.config
+        self.model = model
+        self.target_model = None
+        self.replay_buffer = ReplayBuffer()
+        self.training_step = 0
+        self.episode_rewards: list[float] = []
+        self.current_episode_reward = 0.0
+        self._loss_history: list[float] = []
+        self.action_space_size = action_space_size
+
+    def perceive(self, observation: Any) -> dict[str, Any]:
+        """Process observation into state representation.
+
+        Args:
+            observation: Raw observation from environment.
+
+        Returns:
+            Processed state representation.
+        """
+        state = self._preprocess_observation(observation)
+        return {
+            "state": state,
+            "features": self._extract_features(state),
+            "normalized": self._normalize_state(state),
+        }
+
+    def decide(self, perception: dict[str, Any]) -> AgentAction:
+        """Select action using the learned policy.
+
+        Args:
+            perception: Processed perception data.
+
+        Returns:
+            Selected action.
+        """
+        state = perception.get("normalized", perception.get("state"))
+
+        if self.model is not None:
+            action_values = self._predict(state)
+            action_idx = int(np.argmax(action_values))
+        else:
+            # Random action if no model
+            action_idx = np.random.randint(0, self.action_space_size)
+
+        return AgentAction(
+            action_type="learned_action",
+            parameters={
+                "action_index": action_idx,
+                "state": state
+            }
+        )
+
+    def act(self, action: AgentAction) -> Any:
+        """Execute action and collect experience.
+
+        Args:
+            action: Action to execute.
+
+        Returns:
+            Action result including reward.
+        """
+        result = self._execute_action(action)
+        return result
+
+    def learn(
+        self,
+        state: Any,
+        action: AgentAction,
+        reward: float,
+        next_state: Any,
+        done: bool,
+    ) -> float | None:
+        """Learn from a single experience.
+
+        Args:
+            state: Current state.
+            action: Action taken.
+            reward: Reward received.
+            next_state: Resulting state.
+            done: Whether episode ended.
+
+        Returns:
+            Training loss if learning occurred.
+        """
+        # Store experience
+        experience = Experience(state, action, reward, next_state, done)
+        self.replay_buffer.push(experience)
+
+        # Update episode reward
+        self.current_episode_reward += reward
+        if done:
+            self.episode_rewards.append(self.current_episode_reward)
+            self.current_episode_reward = 0.0
+
+        # Train if enough experiences
+        if len(self.replay_buffer) >= self.config.batch_size:
+            loss = self._train_step()
+            return loss
+
+        return None
+
+    def train_on_batch(self, batch: list[Experience]) -> float:
+        """Train the model on a batch of experiences.
+
+        Args:
+            batch: List of experience tuples.
+
+        Returns:
+            Training loss.
+        """
+        if self.model is None:
+            logger.warning(f"{self.name}: No model to train")
+            return 0.0
+
+        # Extract batch components
+        states = [e.state for e in batch]
+        actions = [e.action.parameters.get("action_index", 0) for e in batch]
+        rewards = [e.reward for e in batch]
+        next_states = [e.next_state for e in batch]
+        dones = [e.done for e in batch]
+
+        # Compute targets (simplified DQN-style)
+        loss = self._compute_loss(states, actions, rewards, next_states, dones)
+        self._loss_history.append(loss)
+
+        # Update target network periodically
+        self.training_step += 1
+        if self.training_step % self.config.target_update_frequency == 0:
+            self._update_target_network()
+
+        return loss
+
+    def save_model(self, path: str) -> None:
+        """Save the learned model.
+
+        Args:
+            path: Path to save model.
+        """
+        logger.info(f"{self.name}: Saving model to {path}")
+        # Placeholder - implement actual model saving
+
+    def load_model(self, path: str) -> None:
+        """Load a pre-trained model.
+
+        Args:
+            path: Path to model file.
+        """
+        logger.info(f"{self.name}: Loading model from {path}")
+        # Placeholder - implement actual model loading
+
+    def get_training_stats(self) -> dict[str, Any]:
+        """Get training statistics.
+
+        Returns:
+            Dictionary of training metrics.
+        """
+        return {
+            "training_steps": self.training_step,
+            "episodes": len(self.episode_rewards),
+            "avg_reward": np.mean(self.episode_rewards) if self.episode_rewards else 0.0,
+            "avg_loss": np.mean(self._loss_history[-100:]) if self._loss_history else 0.0,
+            "buffer_size": len(self.replay_buffer),
+        }
+
+    def _preprocess_observation(self, observation: Any) -> Any:
+        """Preprocess raw observation."""
+        if isinstance(observation, np.ndarray):
+            return observation.flatten()
+        if isinstance(observation, (list, tuple)):
+            return np.array(observation)
+        return observation
+
+    def _extract_features(self, state: Any) -> np.ndarray:
+        """Extract features from state."""
+        if isinstance(state, np.ndarray):
+            return state
+        return np.array([state])
+
+    def _normalize_state(self, state: Any) -> Any:
+        """Normalize state values."""
+        if isinstance(state, np.ndarray):
+            mean = np.mean(state)
+            std = np.std(state) + 1e-8
+            return (state - mean) / std
+        return state
+
+    def _predict(self, state: Any) -> np.ndarray:
+        """Get action values from model."""
+        # Placeholder - implement actual model prediction
+        return np.random.rand(self.action_space_size)
 
     def _execute_action(self, action: AgentAction) -> dict[str, Any]:
         """Execute action in environment."""
