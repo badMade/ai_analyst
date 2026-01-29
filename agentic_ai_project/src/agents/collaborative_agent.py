@@ -301,8 +301,11 @@ class CollaborativeAgent(BaseAgent):
         proposal = content.get("proposal")
 
         # Auto-vote for now (can be made more sophisticated)
-        approve = self._evaluate_proposal(proposal)
-        self.vote(proposal_id, approve, "Automated evaluation")
+```suggestion
+334:    def _evaluate_proposal(self, proposal: dict[str, Any]) -> bool:
+335:        """Evaluate a proposal for voting."""
+336:        # Placeholder - implement actual evaluation logic
+337:        return True
 
     def _handle_vote(self, message: Message) -> None:
         """Handle a vote message."""
