@@ -37,7 +37,7 @@ jobs:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           trigger_phrase: "@claude"
-          model: "claude-sonnet-4-20250514"
+          claude_args: "--model claude-sonnet-4-20250514"
 
   claude-agent:
     name: Claude Agent
@@ -70,6 +70,4 @@ jobs:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           trigger_phrase: "@claude agent"
-          agent_mode: true
-          model: "claude-sonnet-4-20250514"
-          allowed_tools: "Bash,Read,Write,Edit,Glob,Grep"
+          claude_args: "--model claude-sonnet-4-20250514 --allowedTools Bash,Read,Write,Edit,Glob,Grep"
