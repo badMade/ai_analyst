@@ -230,7 +230,6 @@ class ReasoningAgent(BaseAgent):
     ) -> ReasoningTrace:
         """Perform chain-of-thought reasoning."""
         thoughts = []
-        current_confidence = 1.0
 
         # Step 1: Understand the problem
         thought1 = ThoughtNode(
