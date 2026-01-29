@@ -2,7 +2,8 @@
 """
 Standalone runner for AI Analyst.
 
-After installing the package (e.g., `pip install -e .`), you can run:
+From the project root (source checkout), with your virtual environment
+activated, you can run:
     ai-analyst analyze data.csv
     ai-analyst interactive
     ai-analyst inspect data.csv
