@@ -328,8 +328,8 @@ class Planner:
         """Calculate critical path duration."""
         if not plan.tasks:
             return 0.0
-
-        # Simple estimation: sum of all task durations
-        # (A more sophisticated version would calculate actual critical path)
+        batch_size = min(batch_size, len(self.buffer)) # Ensure batch_size is not larger than buffer
+        indices = np.random.choice(len(self.buffer), batch_size, replace=False)
+        return [self.buffer[i] for i in indices]
         total = sum(t.estimated_duration for t in plan.tasks)
         return total
