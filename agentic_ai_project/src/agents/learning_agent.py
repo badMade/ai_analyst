@@ -294,6 +294,13 @@ class LearningAgent(BaseAgent):
     ) -> float:
         """Compute training loss."""
         # Placeholder - implement actual loss computation
+        # Placeholder - implement actual loss computation
+        # Example (conceptual, requires actual model implementation):
+        # current_q_values = self.model.predict(states)
+        # next_q_values = self.target_model.predict(next_states)
+        # target_q_values = rewards + self.config.discount_factor * np.max(next_q_values, axis=1) * (1 - np.array(dones))
+        # loss = np.mean(np.square(target_q_values - current_q_values[np.arange(len(actions)), actions]))
+        # return loss
         return np.random.rand() * 0.1
 
     def _update_target_network(self) -> None:
