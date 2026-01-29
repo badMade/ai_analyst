@@ -57,7 +57,7 @@
   },
   "inputs": [
     {
-      "id": "github-token",
+      "id": "GITHUB_TOKEN",
       "type": "promptString",
       "description": "GitHub Personal Access Token for repository operations",
       "password": true
