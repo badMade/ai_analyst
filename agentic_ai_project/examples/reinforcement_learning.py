@@ -67,9 +67,11 @@ def run_rl_demo():
                 action_idx = random.randint(0, len(env.ACTIONS) - 1)
             else:
                 # Use agent's learned policy
-                perception = agent.perceive(observation.to_array())
-                decision = agent.decide(perception)
-                action_idx = decision.parameters.get("action_index", 0)
+```suggestion
+            # Use agent's learned policy
+            action = env.ACTIONS[action_idx]
+            step_result = agent.step(observation)
+            action_idx = env.ACTIONS.index(step_result.action.action_type)
 
             action = env.ACTIONS[action_idx]
 
