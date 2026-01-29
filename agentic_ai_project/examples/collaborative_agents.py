@@ -204,10 +204,11 @@ def demo_conflict_resolution():
 
     # Process and vote
     for agent in [agent_b, agent_c]:
-        agent._process_inbox()
-        for msg in agent.inbox:
-            agent._handle_message(msg)
-        agent.inbox.clear()
+```suggestion
+        messages = agent.step(None)
+        if messages and isinstance(messages, list):
+            for msg in messages:
+                agent._handle_message(msg)
 
     # Check result
     consensus, ratio = agent_a.check_consensus(proposal_id)
