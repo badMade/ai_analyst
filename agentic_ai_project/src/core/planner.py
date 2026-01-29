@@ -313,8 +313,8 @@ class Planner:
             ready = [t for t in remaining if t.is_ready(completed_ids)]
             if not ready:
                 # Circular dependency or all blocked
+                logger.warning("Planner: Circular dependency or all remaining tasks are blocked. Cannot reorder further.")
                 break
-
             # Sort ready tasks by priority
             ready.sort(key=lambda t: t.priority.value, reverse=True)
             next_task = ready[0]
