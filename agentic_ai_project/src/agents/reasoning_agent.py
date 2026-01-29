@@ -345,5 +345,21 @@ class ReasoningAgent(BaseAgent):
         """Check if two queries are related."""
         words1 = set(query1.lower().split())
         words2 = set(query2.lower().split())
-        overlap = len(words1 & words2)
-        return overlap >= 2
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from sentence_transformers import SentenceTransformer
+
+class ReasoningAgent(BaseAgent):
+    def __init__(self, ...):
+        super().__init__(...)
+        self.embedding_model = SentenceTransformer('all-mpnet-base-v2') # Or another suitable model
+
+    def _is_relevant(self, query1: str, query2: str) -> bool:
+        embedding1 = self.embedding_model.encode(query1)
+        embedding2 = self.embedding_model.encode(query2)
+        similarity = self._cosine_similarity(embedding1, embedding2)
+        return similarity >= 0.7 # Adjust threshold as needed
+
+    def _cosine_similarity(self, a, b):
+        return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
