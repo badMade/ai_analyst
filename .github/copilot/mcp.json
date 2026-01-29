@@ -2,18 +2,65 @@
   "mcpServers": {
     "fetch": {
       "command": "npx",
-      "args": ["-y", "@anthropic-ai/mcp-server-fetch@0.1.2"],
-      "env": {}
+      "args": ["-y", "@anthropic-ai/mcp-server-fetch@latest"],
+      "env": {},
+      "description": "Fetch web content for documentation and API references"
     },
-    "context7": {
+    "github": {
       "command": "npx",
-      "args": ["-y", "@upstash/context7-mcp@0.1.0"],
-      "env": {}
+      "args": ["-y", "@modelcontextprotocol/server-github@latest"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+      },
+      "description": "GitHub API access for issues, PRs, and repository operations"
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@anthropic-ai/mcp-server-filesystem@latest",
+        "${workspaceFolder}"
+      ],
+      "env": {},
+      "description": "Safe file system operations within the workspace"
+    },
+    "memory": {
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/mcp-server-memory@latest"],
+      "env": {},
+      "description": "Persistent memory for context across conversations"
     },
     "sequential-thinking": {
       "command": "npx",
-      "args": ["-y", "@anthropic-ai/mcp-server-sequential-thinking@0.1.0"],
-      "env": {}
+      "args": ["-y", "@anthropic-ai/mcp-server-sequential-thinking@latest"],
+      "env": {},
+      "description": "Step-by-step reasoning for complex analysis tasks"
+    },
+    "postgres": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres@latest"],
+      "env": {
+        "POSTGRES_CONNECTION_STRING": "${DATABASE_URL}"
+      },
+      "disabled": true,
+      "description": "PostgreSQL database access (enable when DATABASE_URL is set)"
+    },
+    "brave-search": {
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/mcp-server-brave-search@latest"],
+      "env": {
+        "BRAVE_API_KEY": "${BRAVE_API_KEY}"
+      },
+      "disabled": true,
+      "description": "Web search capabilities (enable when BRAVE_API_KEY is set)"
     }
-  }
+  },
+  "inputs": [
+    {
+      "id": "github-token",
+      "type": "promptString",
+      "description": "GitHub Personal Access Token for repository operations",
+      "password": true
+    }
+  ]
 }
