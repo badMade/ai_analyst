@@ -127,7 +127,7 @@ class LearningAgent(BaseAgent):
         else:
             # Random action if no model
             action_idx = np.random.randint(0, 4)
-
+            action_idx = np.random.randint(0, self.config.action_space_size)
         return AgentAction(
             action_type="learned_action",
             parameters={"action_index": action_idx, "state": state}
