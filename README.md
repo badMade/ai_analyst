@@ -101,7 +101,7 @@ The Codex automation responds to GitHub comments containing `@codex-agent` and c
 
 ```
 ai-analyst/
-├── run.py                  # Standalone runner
+├── run.py                  # Optional runner for source checkouts
 ├── src/ai_analyst/
 │   ├── analyst.py          # Core standalone analyst
 │   ├── interactive.py      # REPL mode

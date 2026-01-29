@@ -12,7 +12,7 @@ AI Analyst is a Python-based tool that leverages Claude for intelligent data ana
 ## Repository Structure
 
 ai-analyst/
-├── run.py                  # CLI entry point
+├── run.py                  # CLI entry point (source checkout helper)
 ├── src/ai_analyst/
 │   ├── analyst.py          # Core standalone analyst
 │   ├── interactive.py      # REPL mode
@@ -79,7 +79,7 @@ ai-analyst auth
 
 - **ai_analyst/analyst.py**: Contains the main `AIAnalyst` class that handles data loading, Claude API interactions, and analysis generation
 - **ai_analyst/interactive.py**: Implements the REPL interface for interactive data exploration
-- **run.py**: CLI entry point using Click framework
+- **run.py**: CLI entry point using Click framework (source checkout helper)
 
 ## PR Review Guidelines
 
