@@ -98,7 +98,7 @@ agentic_ai_project/
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/example/agentic-ai-project.git
+git clone YOUR_ACTUAL_REPOSITORY_URL_HERE
 cd agentic-ai-project
 ```
 
