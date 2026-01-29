@@ -85,8 +85,7 @@ class AgentLogger:
         Returns:
             The created log entry.
         """
-        if level.value < self.level.value:
-            return None
+    ) -> LogEntry | None:
 
         entry = LogEntry(
             timestamp=datetime.now(),
