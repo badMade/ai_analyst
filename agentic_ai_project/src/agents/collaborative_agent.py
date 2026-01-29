@@ -4,7 +4,7 @@ An agent designed to work cooperatively with other agents,
 supporting communication, coordination, and consensus-building.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Callable
 from enum import Enum
 import asyncio
