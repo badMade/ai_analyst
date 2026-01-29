@@ -53,7 +53,7 @@ def interactive(file_path: str | None, model: str) -> None:
     show_authentication_method()
 
     # Import here to avoid circular imports
-    from interactive import run_interactive
+    from ai_analyst.interactive import run_interactive
 
     run_interactive(file_path, model)
 
@@ -71,7 +71,7 @@ def analyze(file_path: str, query: str, model: str) -> None:
     show_authentication_method()
 
     # Import here to avoid circular imports
-    from analyst import StandaloneAnalyst
+    from ai_analyst.analyst import StandaloneAnalyst
 
     analyst = StandaloneAnalyst(model=model)
     result = analyst.analyze(query, file_path)
