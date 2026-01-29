@@ -121,8 +121,8 @@ class MetricsCollector:
             value: Value to record.
         """
         if name not in self.metrics:
-            # Auto-register as gauge
-            self.register(name, MetricType.GAUGE)
+        if name not in self.metrics:
+            raise ValueError(f"Metric '{name}' not registered. Please register it explicitly with its type before recording.")
 
         metric = self.metrics[name]
         metric.record(value)
