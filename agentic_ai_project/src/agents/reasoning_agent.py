@@ -308,7 +308,7 @@ class ReasoningAgent(BaseAgent):
 
         branches = []
         # Generate 2-3 possible next thoughts
-        for i in range(2):
+        for i in range(self.config.branching_factor):
             child = ThoughtNode(
                 content=f"Branch {i+1} from: {node.content[:30]}...",
                 confidence=node.confidence * 0.95,
@@ -317,7 +317,7 @@ class ReasoningAgent(BaseAgent):
             node.children.append(child)
             branches.extend(self._generate_branches(child, depth - 1))
 
-        return branches
+        return [node] + branches
 
     def _select_best_path(self, nodes: list[ThoughtNode]) -> list[ThoughtNode]:
         """Select the best reasoning path."""
