@@ -39,7 +39,7 @@ class TestEndToEndAnalysis:
     def analyst_with_mock_api(self, mock_settings):
         """Create analyst with mocked API client."""
         with patch("anthropic.Anthropic"):
-            from analyst import StandaloneAnalyst
+            from ai_analyst.analyst import StandaloneAnalyst
 
             analyst = StandaloneAnalyst()
             analyst.client = MagicMock()
@@ -203,7 +203,7 @@ class TestMultipleDatasets:
     def analyst(self, mock_settings):
         """Create analyst with mocked API."""
         with patch("anthropic.Anthropic"):
-            from analyst import StandaloneAnalyst
+            from ai_analyst.analyst import StandaloneAnalyst
 
             analyst = StandaloneAnalyst()
             return analyst
@@ -274,7 +274,7 @@ class TestErrorHandling:
     def analyst(self, mock_settings):
         """Create analyst with mocked API."""
         with patch("anthropic.Anthropic"):
-            from analyst import StandaloneAnalyst
+            from ai_analyst.analyst import StandaloneAnalyst
 
             return StandaloneAnalyst()
 
@@ -323,7 +323,7 @@ class TestDataWithNulls:
     def analyst(self, mock_settings):
         """Create analyst."""
         with patch("anthropic.Anthropic"):
-            from analyst import StandaloneAnalyst
+            from ai_analyst.analyst import StandaloneAnalyst
 
             return StandaloneAnalyst()
 
@@ -374,7 +374,7 @@ class TestDuplicateDetection:
     def analyst(self, mock_settings):
         """Create analyst."""
         with patch("anthropic.Anthropic"):
-            from analyst import StandaloneAnalyst
+            from ai_analyst.analyst import StandaloneAnalyst
 
             return StandaloneAnalyst()
 

@@ -17,7 +17,7 @@ class TestStandaloneAnalystInit:
     def test_init_creates_client(self, mock_settings):
         """Should create Anthropic client on init."""
         with patch("anthropic.Anthropic") as mock_client:
-            from analyst import StandaloneAnalyst
+            from ai_analyst.analyst import StandaloneAnalyst
 
             StandaloneAnalyst()
 
@@ -26,7 +26,7 @@ class TestStandaloneAnalystInit:
     def test_init_uses_provided_model(self, mock_settings):
         """Should use the provided model name."""
         with patch("anthropic.Anthropic"):
-            from analyst import StandaloneAnalyst
+            from ai_analyst.analyst import StandaloneAnalyst
 
             analyst = StandaloneAnalyst(model="claude-3-opus-20240229")
 
@@ -35,7 +35,7 @@ class TestStandaloneAnalystInit:
     def test_init_creates_analysis_context(self, mock_settings):
         """Should create an AnalysisContext."""
         with patch("anthropic.Anthropic"):
-            from analyst import StandaloneAnalyst, AnalysisContext
+            from ai_analyst.analyst import StandaloneAnalyst, AnalysisContext
 
             analyst = StandaloneAnalyst()
 
@@ -44,7 +44,7 @@ class TestStandaloneAnalystInit:
     def test_init_sets_max_iterations(self, mock_settings):
         """Should set max iterations limit."""
         with patch("anthropic.Anthropic"):
-            from analyst import StandaloneAnalyst
+            from ai_analyst.analyst import StandaloneAnalyst
 
             analyst = StandaloneAnalyst()
 
@@ -53,11 +53,11 @@ class TestStandaloneAnalystInit:
     def test_init_raises_without_api_key(self):
         """Should raise error if API key is not set."""
         # Need to patch where get_auth_method is used (in analyst module)
-        with patch("analyst.get_auth_method") as mock_get_auth_method:
+        with patch("ai_analyst.analyst.get_auth_method") as mock_get_auth_method:
             mock_get_auth_method.side_effect = ValueError("Missing ANTHROPIC_API_KEY")
 
             with patch("anthropic.Anthropic"):
-                from analyst import StandaloneAnalyst
+                from ai_analyst.analyst import StandaloneAnalyst
 
                 with pytest.raises(ValueError, match="ANTHROPIC_API_KEY"):
                     StandaloneAnalyst()
@@ -70,7 +70,7 @@ class TestExecuteTool:
     def analyst_with_data(self, mock_settings, sample_csv_file):
         """Create analyst with loaded dataset."""
         with patch("anthropic.Anthropic"):
-            from analyst import StandaloneAnalyst
+            from ai_analyst.analyst import StandaloneAnalyst
 
             analyst = StandaloneAnalyst()
             analyst.context.load_dataset(sample_csv_file, "test_data")
@@ -79,7 +79,7 @@ class TestExecuteTool:
     def test_execute_load_dataset(self, mock_settings, sample_csv_file):
         """Should execute load_dataset tool."""
         with patch("anthropic.Anthropic"):
-            from analyst import StandaloneAnalyst
+            from ai_analyst.analyst import StandaloneAnalyst
 
             analyst = StandaloneAnalyst()
 
@@ -243,7 +243,7 @@ class TestAnalyze:
     def analyst(self, mock_settings):
         """Create analyst with mocked client."""
         with patch("anthropic.Anthropic") as mock_client_class:
-            from analyst import StandaloneAnalyst
+            from ai_analyst.analyst import StandaloneAnalyst
 
             analyst = StandaloneAnalyst()
             analyst.client = MagicMock()
@@ -318,7 +318,7 @@ class TestAnalyzeAsync:
     def analyst(self, mock_settings):
         """Create analyst with mocked client."""
         with patch("anthropic.Anthropic"):
-            from analyst import StandaloneAnalyst
+            from ai_analyst.analyst import StandaloneAnalyst
 
             analyst = StandaloneAnalyst()
             analyst.client = MagicMock()
@@ -351,7 +351,7 @@ class TestCreateAnalyst:
     def test_create_analyst_returns_instance(self, mock_settings):
         """Should return StandaloneAnalyst instance."""
         with patch("anthropic.Anthropic"):
-            from analyst import create_analyst, StandaloneAnalyst
+            from ai_analyst.analyst import create_analyst, StandaloneAnalyst
 
             analyst = create_analyst()
 
@@ -360,7 +360,7 @@ class TestCreateAnalyst:
     def test_create_analyst_with_model(self, mock_settings):
         """Should pass model to constructor."""
         with patch("anthropic.Anthropic"):
-            from analyst import create_analyst
+            from ai_analyst.analyst import create_analyst
 
             analyst = create_analyst(model="claude-3-haiku-20240307")
 
@@ -372,13 +372,13 @@ class TestToolDefinitions:
 
     def test_tools_is_list(self):
         """TOOLS should be a list."""
-        from analyst import TOOLS
+        from ai_analyst.analyst import TOOLS
 
         assert isinstance(TOOLS, list)
 
     def test_tools_have_required_fields(self):
         """Each tool should have name, description, input_schema."""
-        from analyst import TOOLS
+        from ai_analyst.analyst import TOOLS
 
         for tool in TOOLS:
             assert "name" in tool
@@ -387,7 +387,7 @@ class TestToolDefinitions:
 
     def test_tools_have_valid_schemas(self):
         """Tool input schemas should be valid JSON schemas."""
-        from analyst import TOOLS
+        from ai_analyst.analyst import TOOLS
 
         for tool in TOOLS:
             schema = tool["input_schema"]
@@ -396,7 +396,7 @@ class TestToolDefinitions:
 
     def test_expected_tools_exist(self):
         """Expected tools should be defined."""
-        from analyst import TOOLS
+        from ai_analyst.analyst import TOOLS
 
         tool_names = {tool["name"] for tool in TOOLS}
 
