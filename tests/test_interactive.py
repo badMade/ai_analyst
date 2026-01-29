@@ -3,7 +3,7 @@ Tests for interactive REPL mode.
 
 Tests the interactive session, command handling, and user interface.
 
-Note: interactive.py is in the project root, not in the ai_analyst package.
+Note: interactive.py lives in the ai_analyst package.
 """
 
 from unittest.mock import MagicMock, patch
@@ -19,19 +19,19 @@ class TestRunInteractive:
     @pytest.fixture
     def mock_console(self):
         """Mock Rich console."""
-        with patch("interactive.console") as mock:
+        with patch("ai_analyst.interactive.console") as mock:
             yield mock
 
     @pytest.fixture
     def mock_prompt(self):
         """Mock Rich prompt."""
-        with patch("interactive.Prompt") as mock:
+        with patch("ai_analyst.interactive.Prompt") as mock:
             yield mock
 
     @pytest.fixture
     def mock_analyst_class(self):
         """Mock StandaloneAnalyst class."""
-        with patch("interactive.StandaloneAnalyst") as mock:
+        with patch("ai_analyst.interactive.StandaloneAnalyst") as mock:
             mock_instance = MagicMock()
             mock.return_value = mock_instance
             yield mock, mock_instance
@@ -39,23 +39,23 @@ class TestRunInteractive:
     @pytest.fixture
     def mock_settings_valid(self):
         """Mock valid settings with API key."""
-        with patch("interactive.get_auth_method") as mock:
+        with patch("ai_analyst.interactive.get_auth_method") as mock:
             mock.return_value = (AuthMethod.API_KEY, "valid-key")
             yield mock
 
     @pytest.fixture
     def mock_setup_logging(self):
         """Mock setup_logging function."""
-        with patch("interactive.setup_logging"):
+        with patch("ai_analyst.interactive.setup_logging"):
             yield
 
     def test_exits_without_api_key(self, mock_console, mock_setup_logging):
         """Should exit if API key is not set."""
-        with patch("interactive.get_auth_method") as mock_get_auth_method:
+        with patch("ai_analyst.interactive.get_auth_method") as mock_get_auth_method:
             mock_get_auth_method.side_effect = ValueError("Missing ANTHROPIC_API_KEY")
 
             with pytest.raises(SystemExit) as exc_info:
-                from interactive import run_interactive
+                from ai_analyst.interactive import run_interactive
                 run_interactive()
 
             assert exc_info.value.code == 1
@@ -71,7 +71,7 @@ class TestRunInteractive:
         """Should display welcome panel on start."""
         mock_prompt.ask.side_effect = ["quit"]
 
-        from interactive import run_interactive
+        from ai_analyst.interactive import run_interactive
         run_interactive()
 
         # Check that Panel was used in console.print
@@ -89,7 +89,7 @@ class TestRunInteractive:
         """Should exit on 'quit' command."""
         mock_prompt.ask.side_effect = ["quit"]
 
-        from interactive import run_interactive
+        from ai_analyst.interactive import run_interactive
         run_interactive()
 
         # Should have printed goodbye
@@ -110,7 +110,7 @@ class TestRunInteractive:
         """Should exit on 'exit' command."""
         mock_prompt.ask.side_effect = ["exit"]
 
-        from interactive import run_interactive
+        from ai_analyst.interactive import run_interactive
         run_interactive()
 
         goodbye_printed = any(
@@ -130,7 +130,7 @@ class TestRunInteractive:
         """Should exit on 'q' command."""
         mock_prompt.ask.side_effect = ["q"]
 
-        from interactive import run_interactive
+        from ai_analyst.interactive import run_interactive
         run_interactive()
 
         goodbye_printed = any(
@@ -150,7 +150,7 @@ class TestRunInteractive:
         """Should clear console on 'clear' command."""
         mock_prompt.ask.side_effect = ["clear", "quit"]
 
-        from interactive import run_interactive
+        from ai_analyst.interactive import run_interactive
         run_interactive()
 
         mock_console.clear.assert_called()
@@ -166,7 +166,7 @@ class TestRunInteractive:
         """Should show help on 'help' command."""
         mock_prompt.ask.side_effect = ["help", "quit"]
 
-        from interactive import run_interactive
+        from ai_analyst.interactive import run_interactive
         run_interactive()
 
         help_printed = any(
@@ -190,7 +190,7 @@ class TestRunInteractive:
 
         mock_prompt.ask.side_effect = [f"load {test_file}", "quit"]
 
-        from interactive import run_interactive
+        from ai_analyst.interactive import run_interactive
         run_interactive()
 
         loaded_printed = any(
@@ -210,7 +210,7 @@ class TestRunInteractive:
         """Should show error for missing file."""
         mock_prompt.ask.side_effect = ["load /nonexistent/file.csv", "quit"]
 
-        from interactive import run_interactive
+        from ai_analyst.interactive import run_interactive
         run_interactive()
 
         error_printed = any(
@@ -230,7 +230,7 @@ class TestRunInteractive:
         """Should continue on empty input."""
         mock_prompt.ask.side_effect = ["", "quit"]
 
-        from interactive import run_interactive
+        from ai_analyst.interactive import run_interactive
         run_interactive()
 
         # Should have asked twice
@@ -250,7 +250,7 @@ class TestRunInteractive:
 
         mock_prompt.ask.side_effect = ["What is the average?", "quit"]
 
-        from interactive import run_interactive
+        from ai_analyst.interactive import run_interactive
         run_interactive()
 
         mock_instance.analyze.assert_called_once()
@@ -269,7 +269,7 @@ class TestRunInteractive:
 
         mock_prompt.ask.side_effect = ["Analyze this", "quit"]
 
-        from interactive import run_interactive
+        from ai_analyst.interactive import run_interactive
         run_interactive()
 
         analyzing_printed = any(
@@ -289,7 +289,7 @@ class TestRunInteractive:
         """Should handle KeyboardInterrupt gracefully."""
         mock_prompt.ask.side_effect = [KeyboardInterrupt(), "quit"]
 
-        from interactive import run_interactive
+        from ai_analyst.interactive import run_interactive
         run_interactive()
 
         # Should show message about using quit
@@ -313,7 +313,7 @@ class TestRunInteractive:
 
         mock_prompt.ask.side_effect = ["cause error", "quit"]
 
-        from interactive import run_interactive
+        from ai_analyst.interactive import run_interactive
         run_interactive()
 
         error_printed = any(
@@ -340,7 +340,7 @@ class TestRunInteractive:
 
         mock_prompt.ask.side_effect = ["analyze", "quit"]
 
-        from interactive import run_interactive
+        from ai_analyst.interactive import run_interactive
         run_interactive(file_path=str(test_file))
 
         # Check that the file path was passed to analyze
@@ -360,7 +360,7 @@ class TestRunInteractive:
 
         mock_prompt.ask.side_effect = ["quit"]
 
-        from interactive import run_interactive
+        from ai_analyst.interactive import run_interactive
         run_interactive(model="claude-3-opus-20240229")
 
         mock_class.assert_called_once_with(model="claude-3-opus-20240229")

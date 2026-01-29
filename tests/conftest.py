@@ -129,7 +129,7 @@ def mock_settings():
     """Create mock settings with a test API key."""
     from ai_analyst.utils.config import AuthMethod
 
-    with patch("analyst.get_auth_method") as mock_get_auth_method:
+    with patch("ai_analyst.analyst.get_auth_method") as mock_get_auth_method:
         mock_get_auth_method.return_value = (AuthMethod.API_KEY, "test-api-key-12345")
         yield mock_get_auth_method
 
@@ -144,7 +144,7 @@ def env_with_api_key(monkeypatch):
 @pytest.fixture
 def analysis_context():
     """Create a fresh AnalysisContext for testing."""
-    from analyst import AnalysisContext
+    from ai_analyst.analyst import AnalysisContext
     return AnalysisContext()
 
 
