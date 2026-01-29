@@ -93,8 +93,10 @@ class DecisionMaker:
         # Filter options by constraints
         valid_options = self._filter_by_constraints(options, constraints)
         if not valid_options:
+```suggestion
             logger.warning("No valid options after applying constraints")
-            valid_options = options
+            # valid_options = options
+            raise ValueError("No valid options found after applying constraints.")
 
         # Apply decision strategy
         if strategy == DecisionStrategy.UTILITY_MAXIMIZATION:
