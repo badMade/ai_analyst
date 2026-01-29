@@ -1,0 +1,45 @@
+# Environment Configuration
+# Defines simulation and environment settings
+
+environments:
+  default:
+    type: simulation
+    max_steps: 1000
+    render: false
+    seed: 42
+
+  training:
+    type: simulation
+    max_steps: 10000
+    render: false
+    seed: null  # Random seed for training
+    reward_scale: 1.0
+    discount_factor: 0.99
+
+  evaluation:
+    type: simulation
+    max_steps: 500
+    render: true
+    seed: 42
+    deterministic: true
+
+# Simulation parameters
+simulation:
+  time_step: 0.1
+  physics_enabled: false
+  multi_agent: true
+  max_concurrent_agents: 10
+
+# Resource limits
+resources:
+  max_memory_mb: 4096
+  max_cpu_percent: 80
+  gpu_enabled: true
+  gpu_memory_fraction: 0.8
+
+# State management
+state:
+  save_frequency: 100
+  checkpoint_dir: ./data/checkpoints
+  max_checkpoints: 10
+  compression: gzip

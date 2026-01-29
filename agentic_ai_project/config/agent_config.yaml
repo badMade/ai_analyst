@@ -1,0 +1,50 @@
+# Agent Configuration
+# Defines settings for different agent types
+
+agents:
+  base_agent:
+    enabled: true
+    max_steps: 100
+    timeout: 300
+    retry_attempts: 3
+
+  autonomous_agent:
+    enabled: true
+    max_steps: 500
+    timeout: 600
+    learning_rate: 0.001
+    exploration_rate: 0.1
+    memory_size: 10000
+
+  learning_agent:
+    enabled: true
+    max_steps: 1000
+    timeout: 900
+    learning_rate: 0.0001
+    batch_size: 32
+    epochs: 100
+    optimizer: adam
+    loss_function: mse
+
+  reasoning_agent:
+    enabled: true
+    max_steps: 200
+    timeout: 450
+    reasoning_depth: 5
+    inference_method: chain_of_thought
+    knowledge_retrieval: true
+
+  collaborative_agent:
+    enabled: true
+    max_steps: 300
+    timeout: 600
+    communication_protocol: async
+    consensus_threshold: 0.7
+    max_agents: 10
+
+# Default agent settings
+defaults:
+  verbose: true
+  log_actions: true
+  checkpoint_frequency: 100
+  save_memory: true
