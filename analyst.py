@@ -368,19 +368,26 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                 numeric_df = df.select_dtypes(include=[np.number])
                 corr_matrix = numeric_df.corr(method=method)
                 
-                correlations = []
-                cols = corr_matrix.columns.tolist()
-                for i, col_a in enumerate(cols):
-                    for col_b in cols[i+1:]:
-                        corr = corr_matrix.loc[col_a, col_b]
-                        if pd.notna(corr):
-                            correlations.append({
-                                "column_a": col_a,
-                                "column_b": col_b,
-                                "correlation": round(corr, 4)
-                            })
-                
-                correlations.sort(key=lambda x: abs(x["correlation"]), reverse=True)
+                # Keep only upper triangle to avoid duplicates and self-correlations
+                mask = np.triu(np.ones(corr_matrix.shape), k=1).astype(bool)
+
+                # where(mask) replaces masked values with NaN
+                # stack() keeps NaNs in pandas 3.0.0+ so we must drop them explicitly
+                stacked = corr_matrix.where(mask).stack().reset_index()
+                stacked.columns = ['column_a', 'column_b', 'correlation']
+                stacked = stacked.dropna(subset=['correlation'])
+
+                # Round and format
+                stacked['correlation'] = stacked['correlation'].round(4)
+
+                # Sort by absolute correlation
+                # We need a temporary column for absolute value to match the sort key
+                stacked['abs_corr'] = stacked['correlation'].abs()
+                result_df = stacked.sort_values(by='abs_corr', ascending=False)
+
+                # Convert to list of dicts
+                correlations = result_df[['column_a', 'column_b', 'correlation']].to_dict('records')
+
                 result = {"correlations": correlations, "method": method}
             
             elif tool_name == "detect_outliers":
