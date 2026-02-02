@@ -6,6 +6,7 @@ Tests the Settings class, environment variable handling, and utility functions.
 
 import os
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -15,11 +16,11 @@ class TestSettings:
     """Tests for Settings class."""
 
     def test_settings_default_api_key(self):
-        """Settings should have a default API key (for development)."""
+        """Settings should have an empty default API key for security."""
         from ai_analyst.utils.config import Settings
 
         settings = Settings()
-        assert settings.anthropic_api_key == "sk-dummy-key"
+        assert settings.anthropic_api_key == ""
 
     def test_settings_from_env(self, monkeypatch):
         """Settings should load API key from environment."""
@@ -92,7 +93,7 @@ class TestEnvironmentConfiguration:
     """Tests for environment-based configuration."""
 
     def test_missing_api_key_uses_default(self, monkeypatch):
-        """Should use default key when env var is not set."""
+        """Should use default key (empty) when env var is not set."""
         # Clear the env var if it exists
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
 
@@ -100,7 +101,7 @@ class TestEnvironmentConfiguration:
         from ai_analyst.utils.config import Settings
 
         settings = Settings()
-        assert settings.anthropic_api_key == "sk-dummy-key"
+        assert settings.anthropic_api_key == ""
 
     def test_empty_api_key_is_empty_string(self, monkeypatch):
         """Empty env var should result in an empty string value."""
@@ -112,3 +113,32 @@ class TestEnvironmentConfiguration:
         # pydantic-settings uses the empty string from the env var
         # instead of falling back to the default.
         assert settings.anthropic_api_key == ""
+
+
+class TestAuthMethod:
+    """Tests for authentication method determination."""
+
+    def test_get_auth_method_raises_error_when_no_key_and_no_pro(self, monkeypatch):
+        """Should raise ValueError when no auth method is available."""
+        from ai_analyst.utils.config import get_auth_method
+
+        # Ensure no API key in settings
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+
+        # Mock check_pro_subscription_available to return False
+        with patch("ai_analyst.utils.config.check_pro_subscription_available", return_value=False):
+            with pytest.raises(ValueError, match="No authentication method available"):
+                get_auth_method()
+
+    def test_get_auth_method_uses_api_key_if_present(self, monkeypatch):
+        """Should use API key if present and Pro not preferred/available."""
+        from ai_analyst.utils.config import get_auth_method, AuthMethod
+
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
+
+        # Mock Pro check to false so it falls back to API key (or picks it if preference is API)
+        # Default preference is PRO, but if PRO is not available, it uses API key.
+        with patch("ai_analyst.utils.config.check_pro_subscription_available", return_value=False):
+            method, key = get_auth_method()
+            assert method == AuthMethod.API_KEY
+            assert key == "sk-test"
