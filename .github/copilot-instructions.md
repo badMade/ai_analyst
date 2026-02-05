@@ -190,6 +190,10 @@ from ai_analyst.utils.config import sanitize_path
 def load_data(path: str | Path) -> pd.DataFrame:
     """Load data from various formats with validation."""
     safe_path = sanitize_path(path)  # Prevents path traversal
+
+    if not safe_path.exists():
+        raise FileNotFoundError(f"File not found: {safe_path}")
+
     suffix = safe_path.suffix.lower()
 
     loaders = {
