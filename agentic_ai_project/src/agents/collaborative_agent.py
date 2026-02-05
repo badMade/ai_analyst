@@ -5,7 +5,7 @@ supporting communication, coordination, and consensus-building.
 """
 
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Any
 from enum import Enum
 import asyncio
 import logging
