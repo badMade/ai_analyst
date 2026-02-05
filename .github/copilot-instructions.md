@@ -63,7 +63,7 @@ from pydantic import BaseModel
 
 # Local
 from ai_analyst.utils.config import get_settings, sanitize_path
-from ai_analyst.tools.statistical import normality_test
+from ai_analyst.tools.statistical import test_normality
 ```
 
 ### Error Handling
