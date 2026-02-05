@@ -73,7 +73,7 @@
       ]
     }
   },
-  "postCreateCommand": "pip install -e '.[dev,mcp,viz,notebook]' && npm install -g npx",
+  "postCreateCommand": "pip install -e '.[dev,mcp,viz,notebook]'",
   "postStartCommand": "git config --global --add safe.directory ${containerWorkspaceFolder}",
   "containerEnv": {
     "PYTHONPATH": "${containerWorkspaceFolder}/src",
