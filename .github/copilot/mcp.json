@@ -10,7 +10,7 @@
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-github@latest"],
       "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${input:GITHUB_TOKEN}"
       },
       "description": "GitHub API access for issues, PRs, and repository operations"
     },
