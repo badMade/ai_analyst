@@ -26,7 +26,7 @@ When working as an agent on this codebase:
 
 **Adding a new analysis tool:**
 1. Add the tool function in `analyst.py` or `src/ai_analyst/tools/statistical.py`
-2. Register the tool in `StandaloneAnalyst.TOOLS` list
+2. Register the tool in the module-level `TOOLS` list in `src/ai_analyst/analyst.py`
 3. Add handler in `_execute_tool()` method
 4. Write tests in `tests/test_analyst.py` or `tests/test_statistical.py`
 
