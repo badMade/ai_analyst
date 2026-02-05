@@ -278,8 +278,12 @@ console.print(Panel("Key Insight: Strong positive correlation", title="Finding")
    # NEVER do this
    result = eval(user_query)
 
-   # Instead, use safe alternatives
-   result = pd.eval(expression, local_dict={"df": df})  # Limited safe eval
+   # Instead, use safe alternatives that DO NOT evaluate raw user expressions.
+   # For example, implement a constrained query interface and map allowed operations explicitly:
+   ALLOWED_COLUMNS = {"age", "income"}
+   if user_column not in ALLOWED_COLUMNS:
+       raise ValueError("Unsupported column")
+   filtered = df[df[user_column] > threshold]
    ```
 
 4. **Sanitize Log Output** - Mask sensitive data
