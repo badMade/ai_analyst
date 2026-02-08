@@ -33,7 +33,12 @@ def test_correlation_significance(
     x: pd.Series,
     y: pd.Series,
 ) -> tuple[float, float]:
-    return 0.5, 0.001
+    """Compute Pearson correlation coefficient and its p-value."""
+    paired = pd.concat([x, y], axis=1).dropna()
+    if paired.shape[0] < 2:
+        raise ValueError("At least two paired observations are required.")
+    correlation, p_value = stats.pearsonr(paired.iloc[:, 0], paired.iloc[:, 1])
+    return correlation, p_value
 
 
 def detect_trend(

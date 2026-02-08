@@ -12,7 +12,7 @@ from typing import Any
 
 import pandas as pd
 import numpy as np
-from anthropic import Anthropic
+import anthropic
 from pydantic import BaseModel
 
 from ai_analyst.tools.statistical import (
@@ -300,11 +300,11 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
         if auth_method == AuthMethod.PRO_SUBSCRIPTION:
             # Use Pro subscription - Anthropic SDK auto-detects OAuth credentials
             logger.info("Using Claude Pro subscription authentication")
-            self.client = Anthropic()
+            self.client = anthropic.Anthropic()
         else:
             # Use API key
             logger.info("Using API key authentication")
-            self.client = Anthropic(api_key=api_key)
+            self.client = anthropic.Anthropic(api_key=api_key)
 
         self.model = model
         self.context = AnalysisContext()
