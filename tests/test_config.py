@@ -15,11 +15,11 @@ class TestSettings:
     """Tests for Settings class."""
 
     def test_settings_default_api_key(self):
-        """Settings should have a default API key (for development)."""
+        """Settings should have a default empty API key for security."""
         from ai_analyst.utils.config import Settings
 
         settings = Settings()
-        assert settings.anthropic_api_key == "sk-dummy-key"
+        assert settings.anthropic_api_key == ""
 
     def test_settings_from_env(self, monkeypatch):
         """Settings should load API key from environment."""
@@ -92,7 +92,7 @@ class TestEnvironmentConfiguration:
     """Tests for environment-based configuration."""
 
     def test_missing_api_key_uses_default(self, monkeypatch):
-        """Should use default key when env var is not set."""
+        """Should use default empty key when env var is not set."""
         # Clear the env var if it exists
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
 
@@ -100,7 +100,7 @@ class TestEnvironmentConfiguration:
         from ai_analyst.utils.config import Settings
 
         settings = Settings()
-        assert settings.anthropic_api_key == "sk-dummy-key"
+        assert settings.anthropic_api_key == ""
 
     def test_empty_api_key_is_empty_string(self, monkeypatch):
         """Empty env var should result in an empty string value."""
