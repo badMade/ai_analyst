@@ -2,12 +2,12 @@ from pathlib import Path
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
-    anthropic_api_key: str = "dummy_key"
+    anthropic_api_key: str
 
     class Config:
         env_file = ".env"
 
-def get_settings():
+def get_settings() -> Settings:
     return Settings()
 
 def sanitize_path(path_str: str) -> Path:
