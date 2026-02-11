@@ -10,7 +10,6 @@ class MockResponse:
     content = [MockContent()]
 
 def test_sync_wrapper():
-    print("Testing sync wrapper...")
     with patch("analyst.AsyncAnthropic") as MockAsyncAnthropic:
         mock_instance = MockAsyncAnthropic.return_value
 
@@ -21,8 +20,4 @@ def test_sync_wrapper():
 
         analyst = StandaloneAnalyst()
         result = analyst.analyze("Test Query")
-        print(f"Result: {result}")
         assert result == "Analysis complete."
-
-if __name__ == "__main__":
-    test_sync_wrapper()
