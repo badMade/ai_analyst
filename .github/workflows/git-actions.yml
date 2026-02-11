@@ -6,7 +6,7 @@ on:
   check_suite:
     types: [completed]
   workflow_run:
-    workflows: ["PR Validation", "Claude Code Review", "Google AI Code Review", "OpenAI Code Review"]
+    workflows: ["PR Validation", "Claude Code Review", "Gemini Code Assist", "ChatGPT Codex Review"]
     types: [completed]
 
 permissions:
