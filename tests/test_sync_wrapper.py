@@ -23,6 +23,3 @@ def test_sync_wrapper():
         result = analyst.analyze("Test Query")
         print(f"Result: {result}")
         assert result == "Analysis complete."
-
-if __name__ == "__main__":
-    test_sync_wrapper()
