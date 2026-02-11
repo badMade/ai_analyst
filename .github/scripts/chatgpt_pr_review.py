@@ -97,15 +97,7 @@ def set_commit_status(
 
 
 def main():
-    # Configure OpenAI
-    api_key = os.environ.get("OPENAI_API_KEY")
-    if not api_key:
-        print("OPENAI_API_KEY not set, skipping ChatGPT review")
-        return
-
-    client = OpenAI(api_key=api_key)
-
-    # Get GitHub client
+    # Get GitHub client first (needed to set status even when skipping)
     gh_token = os.environ.get("GITHUB_TOKEN")
     if not gh_token:
         print("GITHUB_TOKEN not set")
@@ -124,6 +116,18 @@ def main():
     head_sha = pr.head.sha
     status_context = "ai-review/chatgpt"
 
+    # Configure OpenAI
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        print("OPENAI_API_KEY not set, skipping ChatGPT review")
+        set_commit_status(
+            repo, head_sha, "success",
+            "Skipped - API key not configured", status_context,
+        )
+        return
+
+    client = OpenAI(api_key=api_key)
+
     # Set pending status while review is running
     set_commit_status(
         repo, head_sha, "pending", "ChatGPT review in progress...", status_context
@@ -136,7 +140,11 @@ def main():
     pr_body = os.environ.get("PR_BODY", pr.body) or "No description"
 
     if not diff:
-        print("No diff found")
+        print("No diff found, skipping ChatGPT review")
+        set_commit_status(
+            repo, head_sha, "success",
+            "Skipped - no diff found", status_context,
+        )
         return
 
     # Truncate diff if too long
