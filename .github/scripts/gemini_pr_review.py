@@ -99,16 +99,7 @@ def set_commit_status(
 
 
 def main():
-    # Configure Gemini
-    api_key = os.environ.get("GOOGLE_AI_API_KEY")
-    if not api_key:
-        print("GOOGLE_AI_API_KEY not set, skipping Gemini review")
-        return
-
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-2.0-flash")
-
-    # Get GitHub client
+    # Get GitHub client first (needed to set status even when skipping)
     gh_token = os.environ.get("GITHUB_TOKEN")
     if not gh_token:
         print("GITHUB_TOKEN not set")
@@ -127,6 +118,19 @@ def main():
     head_sha = pr.head.sha
     status_context = "ai-review/gemini"
 
+    # Configure Gemini
+    api_key = os.environ.get("GOOGLE_AI_API_KEY")
+    if not api_key:
+        print("GOOGLE_AI_API_KEY not set, skipping Gemini review")
+        set_commit_status(
+            repo, head_sha, "success",
+            "Skipped - API key not configured", status_context,
+        )
+        return
+
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel("gemini-2.0-flash")
+
     # Set pending status while review is running
     set_commit_status(
         repo, head_sha, "pending", "Gemini review in progress...", status_context
@@ -137,7 +141,11 @@ def main():
     changed_files = get_changed_files()
 
     if not diff:
-        print("No diff found")
+        print("No diff found, skipping Gemini review")
+        set_commit_status(
+            repo, head_sha, "success",
+            "Skipped - no diff found", status_context,
+        )
         return
 
     # Truncate diff if too long (Gemini has token limits)

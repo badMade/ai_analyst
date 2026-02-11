@@ -113,15 +113,7 @@ def main():
         print("PR number not provided. Usage: python claude_pr_review.py <pr_number>")
         return
 
-    # Configure Anthropic client
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
-    if not api_key:
-        print("ANTHROPIC_API_KEY not set, skipping Claude review")
-        return
-
-    client = anthropic.Anthropic(api_key=api_key)
-
-    # Get GitHub client
+    # Get GitHub client first (needed to set status even when skipping)
     gh_token = os.environ.get("GITHUB_TOKEN")
     if not gh_token:
         print("GITHUB_TOKEN not set")
@@ -143,6 +135,18 @@ def main():
     head_sha = pr.head.sha
     status_context = "ai-review/claude"
 
+    # Configure Anthropic client
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        print("ANTHROPIC_API_KEY not set, skipping Claude review")
+        set_commit_status(
+            repo, head_sha, "success",
+            "Skipped - API key not configured", status_context,
+        )
+        return
+
+    client = anthropic.Anthropic(api_key=api_key)
+
     # Set pending status while review is running
     set_commit_status(
         repo, head_sha, "pending", "Claude review in progress...", status_context
@@ -153,7 +157,11 @@ def main():
     changed_files = get_changed_files()
 
     if not diff:
-        print("No diff found")
+        print("No diff found, skipping Claude review")
+        set_commit_status(
+            repo, head_sha, "success",
+            "Skipped - no diff found", status_context,
+        )
         return
 
     # Truncate diff if too long (Claude has generous token limits but we should be reasonable)
