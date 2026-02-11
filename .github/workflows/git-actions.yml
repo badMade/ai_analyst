@@ -209,20 +209,43 @@ jobs:
             if (!prNumber) return;
 
             try {
-              // Final re-verification: check the merge-gate status is still success
+              // Final re-verification: check merge gate + all agent sign-offs are still success
               const { data: statusResponse } = await github.rest.repos.getCombinedStatusForRef({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 ref: headSha,
               });
 
-              const gateStatus = statusResponse.statuses.find(
-                s => s.context === 'merge-gate/all-agents-approved'
-              );
+              const statusMap = {};
+              for (const status of statusResponse.statuses) {
+                if (!statusMap[status.context]) {
+                  statusMap[status.context] = status;
+                }
+              }
 
-              if (!gateStatus || gateStatus.state !== 'success') {
-                console.log('Merge gate is no longer in success state');
-                core.setFailed('Merge gate status changed — aborting merge');
+              const requiredStatuses = [
+                'ai-review/claude',
+                'ai-review/gemini',
+                'ai-review/chatgpt',
+                'merge-gate/all-agents-approved',
+              ];
+
+              const failedStatuses = [];
+              for (const ctx of requiredStatuses) {
+                const status = statusMap[ctx];
+                if (!status) {
+                  failedStatuses.push(`${ctx}: not found`);
+                } else if (status.state !== 'success') {
+                  failedStatuses.push(`${ctx}: ${status.state} — ${status.description}`);
+                }
+              }
+
+              if (failedStatuses.length > 0) {
+                console.log('One or more required statuses are no longer successful:');
+                for (const item of failedStatuses) {
+                  console.log(`- ${item}`);
+                }
+                core.setFailed('Required review statuses changed — aborting merge');
                 return;
               }
 
