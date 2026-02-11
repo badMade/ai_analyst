@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 OpenAI Codex Agent for GitHub.
 Responds to @codex-agent mentions and can make code changes.
@@ -10,6 +9,9 @@ import re
 import subprocess
 
 from github import Github
+from github.Issue import Issue
+from github.PullRequest import PullRequest
+from github.Repository import Repository
 from openai import OpenAI
 
 
@@ -24,8 +26,11 @@ def get_event_data():
 
 def extract_prompt(text: str) -> str:
     """Extract the prompt after @codex-agent mention."""
-    match = re.search(r"@codex-agent\s+(.+)", text, re.IGNORECASE | re.DOTALL)
-    return match.group(1).strip() if match else ""
+    match = re.search(r"@codex-agent(?:\s+(.+))?", text, re.IGNORECASE | re.DOTALL)
+    if not match:
+        return ""
+    prompt = (match.group(1) or "").strip()
+    return prompt
 
 
 def get_file_content(file_path: str) -> str:
@@ -60,7 +65,8 @@ def write_file_content(file_path: str, content: str) -> bool:
         with open(target_path, "w") as f:
             f.write(content)
         return True
-    except Exception:
+    except Exception as e:
+        print(f"Error writing file {file_path}: {e}")
         return False
 
 
@@ -75,6 +81,64 @@ def git_commit_and_push(message: str, branch: str) -> bool:
         return True
     except subprocess.CalledProcessError:
         return False
+
+
+def resolve_issue_or_pr(repo: Repository, event: dict) -> tuple[Issue | PullRequest | None, str]:
+    """Resolve the issue or PR object and comment body from the event."""
+    comment_body = ""
+    issue_or_pr = None
+
+    if "comment" in event:
+        comment_body = event["comment"].get("body", "")
+        if "issue" in event:
+            issue_or_pr = repo.get_issue(event["issue"]["number"])
+        elif "pull_request" in event:
+            issue_or_pr = repo.get_pull(event["pull_request"]["number"])
+    elif "review" in event:
+        comment_body = event["review"].get("body", "")
+        if "pull_request" in event:
+            issue_or_pr = repo.get_pull(event["pull_request"]["number"])
+    elif "issue" in event:
+        comment_body = event["issue"].get("body", "")
+        issue_or_pr = repo.get_issue(event["issue"]["number"])
+
+    return issue_or_pr, comment_body
+
+
+def get_author_association(event: dict) -> str:
+    """Return the author association if available."""
+    for key in ("comment", "issue", "review"):
+        association = event.get(key, {}).get("author_association")
+        if association:
+            return association
+    return ""
+
+
+def list_repo_files(max_files: int) -> list[str]:
+    """List tracked repository files for context."""
+    max_files = max(1, max_files)
+    try:
+        file_list = subprocess.run(
+            ["git", "ls-files"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        print(f"Warning: Could not list repository files: {e}")
+        return []
+    files = [line.strip() for line in file_list.stdout.splitlines() if line.strip()]
+    allowed_extensions_env = os.environ.get("CODEX_AGENT_ALLOWED_EXTENSIONS")
+    if allowed_extensions_env is not None:
+        allowed_extensions = tuple(
+            ext.strip() for ext in allowed_extensions_env.split(",") if ext.strip()
+        )
+    else:
+        allowed_extensions = (".py", ".js", ".ts", ".md", ".yml", ".yaml", ".toml", ".json")
+    if not allowed_extensions:
+        return files[:max_files]
+    filtered_files = [f for f in files if f.endswith(allowed_extensions)]
+    return filtered_files[:max_files]
 
 
 def main():
@@ -99,21 +163,17 @@ def main():
     event = get_event_data()
 
     # Determine context
-    comment_body = ""
-    issue_or_pr = None
-
-    if "comment" in event:
-        comment_body = event["comment"].get("body", "")
-        if "issue" in event:
-            issue_or_pr = repo.get_issue(event["issue"]["number"])
-        elif "pull_request" in event:
-            issue_or_pr = repo.get_pull(event["pull_request"]["number"])
-    elif "issue" in event:
-        comment_body = event["issue"].get("body", "")
-        issue_or_pr = repo.get_issue(event["issue"]["number"])
+    issue_or_pr, comment_body = resolve_issue_or_pr(repo, event)
 
     if not issue_or_pr:
         print("Could not determine issue or PR context")
+        return
+
+    # Validate author association as a defense-in-depth check
+    author_association = get_author_association(event)
+    allowed_associations = {"OWNER", "MEMBER", "COLLABORATOR"}
+    if not author_association or author_association not in allowed_associations:
+        print(f"Unauthorized author association: {author_association}")
         return
 
     # Extract prompt
@@ -121,14 +181,12 @@ def main():
     if not prompt:
         print("No prompt found after @codex-agent mention")
         return
-
-    # Get repository file structure
-    file_list = subprocess.run(
-        ["find", ".", "-type", "f", "-name", "*.py", "-o", "-name", "*.js", "-o", "-name", "*.ts"],
-        capture_output=True,
-        text=True,
-    )
-    files = [f for f in file_list.stdout.strip().split("\n") if f and not f.startswith("./.git")]
+    try:
+        max_files_to_show = int(os.environ.get("CODEX_AGENT_MAX_FILES", "50"))
+    except ValueError:
+        max_files_to_show = 50
+    max_files_to_show = max(1, max_files_to_show)
+    files = list_repo_files(max_files_to_show)
 
     # Build agent prompt
     system_message = """You are Codex Agent, an AI coding assistant that can analyze and modify code.
@@ -147,21 +205,12 @@ When asked to make changes, provide your response in this JSON format:
 
 If no code changes are needed, set "changes" to an empty array and provide your response in "analysis"."""
 
-    max_files_env = os.environ.get("CODEX_AGENT_MAX_FILES")
-    try:
-        max_files_to_show = int(max_files_env) if max_files_env is not None else 50
-    except ValueError:
-        max_files_to_show = 50
-    if max_files_to_show < 1:
-        max_files_to_show = 1
-    files_for_context = files[:max_files_to_show]
-
     user_message = f"""Repository: {repo.full_name}
 Issue/PR: {issue_or_pr.title}
 Description: {issue_or_pr.body or 'No description'}
 
 Files in repository:
-{chr(10).join(files_for_context)}
+{chr(10).join(files)}
 
 User request: {prompt}
 
@@ -169,7 +218,7 @@ Analyze the request and provide changes if needed."""
 
     try:
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model=os.environ.get("OPENAI_MODEL", "gpt-4o"),
             messages=[
                 {"role": "system", "content": system_message},
                 {"role": "user", "content": user_message},
@@ -235,10 +284,9 @@ Analyze the request and provide changes if needed."""
         print("Codex Agent completed successfully")
 
     except Exception as e:
+        error_msg = f"Codex Agent encountered an error: {str(e)}"
+        issue_or_pr.create_comment(error_msg)
         print(f"Error: {e}")
-        issue_or_pr.create_comment(
-            "Codex Agent encountered an error. Please check the workflow logs for details."
-        )
 
 
 if __name__ == "__main__":

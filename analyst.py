@@ -8,7 +8,6 @@ Uses Claude API directly with tool definitions for a simpler standalone setup.
 import asyncio
 import json
 import logging
-from pathlib import Path
 from typing import Any
 
 import pandas as pd
@@ -22,7 +21,12 @@ from ai_analyst.tools.statistical import (
     test_correlation_significance,
     detect_trend,
 )
-from ai_analyst.utils.config import get_settings, sanitize_path
+from ai_analyst.utils.config import (
+    get_settings,
+    sanitize_path,
+    get_auth_method,
+    AuthMethod,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +67,7 @@ class AnalysisContext:
             "columns": len(df.columns),
             "column_names": df.columns.tolist(),
             "dtypes": {col: str(dtype) for col, dtype in df.dtypes.items()},
-            "null_counts": {col: int(count) for col, count in df.isna().sum().items()}
+            "null_counts": df.isna().sum().to_dict()
         }
     
     def get_dataset(self, name: str) -> pd.DataFrame:
@@ -290,11 +294,18 @@ When analyzing data:
 Be thorough but efficient. Present results in a structured, easy-to-understand format."""
     
     def __init__(self, model: str = "claude-sonnet-4-20250514"):
-        settings = get_settings()
-        if not settings.anthropic_api_key:
-            raise ValueError("ANTHROPIC_API_KEY not set")
-        
-        self.client = Anthropic(api_key=settings.anthropic_api_key)
+        # Get authentication method (Pro subscription first, API key as fallback)
+        auth_method, api_key = get_auth_method()
+
+        if auth_method == AuthMethod.PRO_SUBSCRIPTION:
+            # Use Pro subscription - Anthropic SDK auto-detects OAuth credentials
+            logger.info("Using Claude Pro subscription authentication")
+            self.client = Anthropic()
+        else:
+            # Use API key
+            logger.info("Using API key authentication")
+            self.client = Anthropic(api_key=api_key)
+
         self.model = model
         self.context = AnalysisContext()
         self.max_iterations = 15
@@ -320,16 +331,12 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                 columns = tool_input.get("columns")
                 
                 if columns:
-                    preview_df = df.head(n_rows)[columns]
-                    column_names = columns
-                else:
-                    preview_df = df.head(n_rows)
-                    column_names = df.columns.tolist()
+                    df = df[columns]
                 
                 result = {
-                    "data": preview_df.to_dict(orient="records"),
+                    "data": df.head(n_rows).to_dict(orient="records"),
                     "total_rows": len(df),
-                    "columns": column_names
+                    "columns": df.columns.tolist()
                 }
             
             elif tool_name == "describe_statistics":
@@ -361,15 +368,18 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                 numeric_df = df.select_dtypes(include=[np.number])
                 corr_matrix = numeric_df.corr(method=method)
                 
-                # Optimized implementation using vectorization
-                mask = np.triu(np.ones(corr_matrix.shape, dtype=bool), k=1)
-                stacked = corr_matrix.where(mask).stack()
+                correlations = []
+                cols = corr_matrix.columns.tolist()
+                for i, col_a in enumerate(cols):
+                    for col_b in cols[i+1:]:
+                        corr = corr_matrix.loc[col_a, col_b]
+                        if pd.notna(corr):
+                            correlations.append({
+                                "column_a": col_a,
+                                "column_b": col_b,
+                                "correlation": round(corr, 4)
+                            })
                 
-                df_corr = stacked.reset_index()
-                df_corr.columns = ['column_a', 'column_b', 'correlation']
-                df_corr['correlation'] = df_corr['correlation'].round(4)
-
-                correlations = df_corr.to_dict('records')
                 correlations.sort(key=lambda x: abs(x["correlation"]), reverse=True)
                 result = {"correlations": correlations, "method": method}
             
@@ -421,34 +431,39 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
             
             elif tool_name == "check_data_quality":
                 df = self.context.get_dataset(tool_input["dataset_name"])
-                
+
                 total_rows = len(df)
                 total_cells = df.size
+                # Calculate null counts for all columns at once to avoid re-scanning in the loop
                 null_counts = df.isna().sum()
                 null_cells = null_counts.sum()
                 duplicate_rows = df.duplicated().sum()
 
                 column_issues = {}
-                if total_rows > 0:
-                    column_issues = {
-                        col: [f"Missing: {count / total_rows * 100:.1f}%"]
-                        for col, count in null_counts.items() if count > 0
-                    }
+                # Vectorized calculation of null percentages using precomputed null_counts
+                null_pcts = (null_counts / total_rows) * 100
+
+                # Filter only columns with nulls
+                cols_with_nulls = null_pcts[null_pcts > 0]
+
+                for col, pct in cols_with_nulls.items():
+                    column_issues[col] = [f"Missing: {pct:.1f}%"]
+
+                null_percentage = (null_cells / total_cells) * 100 if total_cells else 0.0
+                duplicate_percentage = (
+                    (duplicate_rows / total_rows) * 100 if total_rows else 0.0
+                )
+                quality_score = 100 - (null_percentage * 0.5 + duplicate_percentage * 0.5)
 
                 result = {
                     "total_rows": total_rows,
                     "total_columns": len(df.columns),
                     "null_cells": int(null_cells),
-                    "null_percentage": round(null_cells / total_cells * 100, 2) if total_cells > 0 else 0,
+                    "null_percentage": round(null_percentage, 2),
                     "duplicate_rows": int(duplicate_rows),
-                    "duplicate_percentage": round(duplicate_rows / total_rows * 100, 2) if total_rows > 0 else 0,
+                    "duplicate_percentage": round(duplicate_percentage, 2),
                     "column_issues": column_issues,
-                    "quality_score": round(
-                        100
-                        - (null_cells / total_cells * 50 if total_cells > 0 else 0)
-                        - (duplicate_rows / total_rows * 50 if total_rows > 0 else 0),
-                        1,
-                    ),
+                    "quality_score": round(quality_score, 2)
                 }
             
             elif tool_name == "test_normality":

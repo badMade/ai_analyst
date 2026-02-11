@@ -1,0 +1,282 @@
+name: Git Automation
+
+on:
+  pull_request:
+    types: [closed]
+  workflow_run:
+    workflows: ["Merge Gate"]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+  statuses: read
+
+jobs:
+  auto-delete-branch:
+    name: Auto Delete Merged Branch
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+    steps:
+      - name: Delete branch
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branch = context.payload.pull_request.head.ref;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            // Skip deletion for protected branch patterns
+            // Protected patterns include:
+            // - Exact matches: main, master, develop
+            // - Prefix matches: release/*, releases/*, hotfix/*
+            const protectedPatterns = ['main', 'master', 'develop'];
+            const protectedPrefixes = ['release/', 'releases/', 'hotfix/'];
+            
+            const isProtected = protectedPatterns.includes(branch) || 
+                                protectedPrefixes.some(prefix => branch.startsWith(prefix));
+            
+            if (isProtected) {
+              console.log(`Skipping deletion of protected branch: ${branch}`);
+              return;
+            }
+
+            try {
+              await github.rest.git.deleteRef({
+                owner,
+                repo,
+                ref: `heads/${branch}`
+              });
+              console.log(`Successfully deleted branch: ${branch}`);
+            } catch (error) {
+              // Handle specific error scenarios
+              if (error.status === 422) {
+                // 422 can mean branch doesn't exist or is protected
+                const errorMsg = error.message || '';
+                if (errorMsg.includes('Reference does not exist')) {
+                  console.log(`Branch ${branch} was already deleted`);
+                } else {
+                  console.log(`Unable to delete branch ${branch}: ${errorMsg}`);
+                }
+              } else if (error.status === 404) {
+                console.log(`Branch ${branch} not found (already deleted)`);
+              } else {
+                throw error;
+              }
+            }
+
+  auto-merge-pr:
+    name: Auto Merge After Checks Pass
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'success'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Get PR for workflow run
+        id: get-pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const headSha = context.payload.workflow_run.head_sha;
+            const headBranch = context.payload.workflow_run.head_branch;
+
+            if (!headSha) {
+              console.log('No head SHA found');
+              core.setOutput('has_pr', 'false');
+              return;
+            }
+
+            // Find PR associated with this commit
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              head: `${context.repo.owner}:${headBranch}`
+            });
+
+            if (prs.length === 0) {
+              console.log('No open PR found for this branch');
+              core.setOutput('has_pr', 'false');
+              return;
+            }
+
+            const pr = prs[0];
+            console.log(`Found PR #${pr.number} (head SHA: ${pr.head.sha})`);
+            core.setOutput('pr_number', pr.number);
+            core.setOutput('head_sha', pr.head.sha);
+            core.setOutput('has_pr', 'true');
+
+      - name: Verify all agent sign-offs
+        if: steps.get-pr.outputs.has_pr == 'true'
+        id: verify-agents
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const headSha = '${{ steps.get-pr.outputs.head_sha }}';
+            const prNumber = ${{ steps.get-pr.outputs.pr_number || 0 }};
+            if (!prNumber) return;
+
+            // Required agent approval statuses
+            const requiredStatuses = [
+              'ai-review/claude',
+              'ai-review/gemini',
+              'ai-review/chatgpt',
+              'merge-gate/all-agents-approved',
+            ];
+
+            // Fetch combined status for this SHA
+            const { data: statusResponse } = await github.rest.repos.getCombinedStatusForRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: headSha,
+            });
+
+            // Build a map of context -> latest state
+            const statusMap = {};
+            for (const s of statusResponse.statuses) {
+              if (!statusMap[s.context]) {
+                statusMap[s.context] = s;
+              }
+            }
+
+            // Verify each required status is present and successful
+            const failures = [];
+            for (const ctx of requiredStatuses) {
+              const s = statusMap[ctx];
+              if (!s) {
+                failures.push(`${ctx}: not found`);
+                console.log(`FAIL: ${ctx} — status not found`);
+              } else if (s.state !== 'success') {
+                failures.push(`${ctx}: ${s.state} — ${s.description}`);
+                console.log(`FAIL: ${ctx} — state=${s.state}, description=${s.description}`);
+              } else {
+                console.log(`OK: ${ctx} — ${s.description}`);
+              }
+            }
+
+            // Also verify all CI check runs passed
+            const { data: checkRuns } = await github.rest.checks.listForRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: headSha,
+            });
+
+            const ciChecks = checkRuns.check_runs.filter(
+              c => c.name !== 'Auto Merge After Checks Pass' &&
+                   c.name !== 'Auto Delete Merged Branch' &&
+                   c.name !== 'Verify All Agent Sign-offs'
+            );
+
+            for (const check of ciChecks) {
+              if (check.status !== 'completed') {
+                failures.push(`CI check '${check.name}': still ${check.status}`);
+                console.log(`FAIL: CI check '${check.name}' not completed (${check.status})`);
+              } else if (check.conclusion !== 'success' && check.conclusion !== 'skipped') {
+                failures.push(`CI check '${check.name}': ${check.conclusion}`);
+                console.log(`FAIL: CI check '${check.name}' — ${check.conclusion}`);
+              } else {
+                console.log(`OK: CI check '${check.name}' — ${check.conclusion}`);
+              }
+            }
+
+            if (failures.length > 0) {
+              const msg = `Cannot auto-merge: ${failures.length} issue(s):\n` + failures.join('\n');
+              console.log(`\n${msg}`);
+              core.setFailed(msg);
+              return;
+            }
+
+            console.log('\nAll checks passed and all agents approved — ready to merge');
+
+      - name: Wait 1 minute before merge
+        if: steps.get-pr.outputs.has_pr == 'true'
+        run: |
+          echo "Waiting 1 minute before auto-merge..."
+          sleep 60
+          echo "Wait complete, proceeding with merge"
+
+      - name: Auto merge PR
+        if: steps.get-pr.outputs.has_pr == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = ${{ steps.get-pr.outputs.pr_number || 0 }};
+            const headSha = '${{ steps.get-pr.outputs.head_sha }}';
+            if (!prNumber) return;
+
+            try {
+              // Final re-verification: check merge gate + all agent sign-offs are still success
+              const { data: statusResponse } = await github.rest.repos.getCombinedStatusForRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: headSha,
+              });
+
+              const statusMap = {};
+              for (const status of statusResponse.statuses) {
+                if (!statusMap[status.context]) {
+                  statusMap[status.context] = status;
+                }
+              }
+
+              const requiredStatuses = [
+                'ai-review/claude',
+                'ai-review/gemini',
+                'ai-review/chatgpt',
+                'merge-gate/all-agents-approved',
+              ];
+
+              const failedStatuses = [];
+              for (const ctx of requiredStatuses) {
+                const status = statusMap[ctx];
+                if (!status) {
+                  failedStatuses.push(`${ctx}: not found`);
+                } else if (status.state !== 'success') {
+                  failedStatuses.push(`${ctx}: ${status.state} — ${status.description}`);
+                }
+              }
+
+              if (failedStatuses.length > 0) {
+                console.log('One or more required statuses are no longer successful:');
+                for (const item of failedStatuses) {
+                  console.log(`- ${item}`);
+                }
+                core.setFailed('Required review statuses changed — aborting merge');
+                return;
+              }
+
+              // Verify PR is still open and mergeable
+              const { data: pr } = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber
+              });
+
+              if (pr.state !== 'open') {
+                console.log('PR is no longer open');
+                return;
+              }
+
+              if (!pr.mergeable) {
+                console.log('PR is not mergeable');
+                core.setFailed('PR is not mergeable');
+                return;
+              }
+
+              // Perform the merge
+              await github.rest.pulls.merge({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber,
+                merge_method: 'squash'
+              });
+
+              console.log(`Successfully merged PR #${prNumber}`);
+            } catch (error) {
+              console.log(`Failed to merge PR: ${error.message}`);
+              core.setFailed(`Merge failed: ${error.message}`);
+            }

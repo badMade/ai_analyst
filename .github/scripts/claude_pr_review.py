@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Gemini PR Review - Automated code review using Google AI Studio.
+Claude PR Review - Automated code review using Anthropic Claude.
 Analyzes pull requests and provides detailed feedback.
 Sets a commit status to block or approve auto-merge.
 """
@@ -8,8 +8,9 @@ Sets a commit status to block or approve auto-merge.
 import os
 import re
 import subprocess
+import sys
 
-import google.generativeai as genai
+import anthropic
 from github import Github
 
 
@@ -24,7 +25,8 @@ def get_pr_diff() -> str:
             check=True,
         )
         return result.stdout
-    except subprocess.CalledProcessError:
+    except subprocess.CalledProcessError as e:
+        print(f"Error getting diff: {e}")
         return ""
 
 
@@ -38,8 +40,9 @@ def get_changed_files() -> list[str]:
             text=True,
             check=True,
         )
-        return result.stdout.strip().split("\n")
-    except subprocess.CalledProcessError:
+        return [f for f in result.stdout.strip().split("\n") if f]
+    except subprocess.CalledProcessError as e:
+        print(f"Error getting changed files: {e}")
         return []
 
 
@@ -99,14 +102,24 @@ def set_commit_status(
 
 
 def main():
-    # Configure Gemini
-    api_key = os.environ.get("GOOGLE_AI_API_KEY")
-    if not api_key:
-        print("GOOGLE_AI_API_KEY not set, skipping Gemini review")
+    # Get PR number from command line or environment
+    pr_number = None
+    if len(sys.argv) > 1:
+        pr_number = sys.argv[1]
+    else:
+        pr_number = os.environ.get("PR_NUMBER")
+
+    if not pr_number:
+        print("PR number not provided. Usage: python claude_pr_review.py <pr_number>")
         return
 
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-2.0-flash")
+    # Configure Anthropic client
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        print("ANTHROPIC_API_KEY not set, skipping Claude review")
+        return
+
+    client = anthropic.Anthropic(api_key=api_key)
 
     # Get GitHub client
     gh_token = os.environ.get("GITHUB_TOKEN")
@@ -115,21 +128,24 @@ def main():
         return
 
     gh = Github(gh_token)
-    repo = gh.get_repo(os.environ.get("GITHUB_REPOSITORY"))
-
-    pr_number = os.environ.get("PR_NUMBER")
-    if not pr_number:
-        print("PR_NUMBER not set")
+    repo_name = os.environ.get("GITHUB_REPOSITORY")
+    if not repo_name:
+        print("GITHUB_REPOSITORY not set")
         return
 
-    pr = repo.get_pull(int(pr_number))
+    repo = gh.get_repo(repo_name)
+    try:
+        pr = repo.get_pull(int(pr_number))
+    except ValueError:
+        print(f"Error: PR number '{pr_number}' is not a valid integer.")
+        return
 
     head_sha = pr.head.sha
-    status_context = "ai-review/gemini"
+    status_context = "ai-review/claude"
 
     # Set pending status while review is running
     set_commit_status(
-        repo, head_sha, "pending", "Gemini review in progress...", status_context
+        repo, head_sha, "pending", "Claude review in progress...", status_context
     )
 
     # Get diff and files
@@ -140,43 +156,60 @@ def main():
         print("No diff found")
         return
 
-    # Truncate diff if too long (Gemini has token limits)
-    max_diff_length = 30000
+    # Truncate diff if too long (Claude has generous token limits but we should be reasonable)
+    max_diff_length = 50000
+    truncated = False
     if len(diff) > max_diff_length:
-        diff = diff[:max_diff_length] + "\n... (diff truncated)"
+        diff = diff[:max_diff_length]
+        truncated = True
 
     # Build review prompt
-    prompt = f"""You are an expert code reviewer. Review this pull request and provide constructive feedback.
+    system_prompt = """You are an expert code reviewer powered by Anthropic Claude.
+Your task is to review pull requests and provide constructive, actionable feedback.
+Focus on code quality, potential bugs, security issues, and best practices.
+Format your response in GitHub-flavored markdown.
+Be thorough but concise. Prioritize the most important issues."""
+
+    files_list = "\n".join(f"- {f}" for f in changed_files)
+    truncated_note = "(Note: diff was truncated due to size)" if truncated else ""
+
+    user_prompt = f"""Review this pull request:
 
 ## Pull Request
 **Title:** {pr.title}
 **Description:** {pr.body or 'No description provided'}
 
 ## Changed Files
-{chr(10).join(f'- {f}' for f in changed_files if f)}
+{files_list}
 
 ## Diff
 ```diff
 {diff}
 ```
+{truncated_note}
 
-## Review Instructions
-Provide a thorough code review covering:
+Please provide a thorough code review covering:
 
 1. **Summary**: Brief overview of what this PR does
 2. **Code Quality**: Evaluate readability, maintainability, and best practices
 3. **Potential Issues**: Bugs, edge cases, security concerns
 4. **Suggestions**: Specific improvements with code examples if helpful
-5. **Implementation Details**: For your suggestions, what are the steps, files, and line numbers required to implement them?
-6. **Overall Assessment**: Approve, request changes, or comment
+5. **Overall Assessment**: Approve, request changes, or comment
 
-Format your response in GitHub-flavored markdown. Be constructive and specific.
-Use inline code references where applicable."""
+Be constructive and specific. Use inline code references where applicable."""
 
     try:
-        # Generate review
-        response = model.generate_content(prompt)
-        review_text = response.text
+        # Generate review using Claude
+        response = client.messages.create(
+            model=os.environ.get("CLAUDE_REVIEW_MODEL", "claude-sonnet-4-20250514"),
+            max_tokens=2000,
+            messages=[
+                {"role": "user", "content": user_prompt}
+            ],
+            system=system_prompt,
+        )
+
+        review_text = response.content[0].text
 
         # Parse the verdict from the review
         verdict = parse_review_verdict(review_text)
@@ -187,43 +220,55 @@ Use inline code references where applicable."""
         }[verdict]
 
         # Post review comment
-        review_body = f"""## Gemini Code Review
+        review_body = f"""## Claude Code Review
 
 {review_text}
 
 ---
 **Sign-off status: {verdict_label}**
-*Automated review by Google Gemini AI Studio*
+*Automated review by Anthropic Claude*
 """
 
         pr.create_issue_comment(review_body)
-        print(f"Gemini review posted successfully (verdict: {verdict})")
+        print(f"Claude review posted successfully (verdict: {verdict})")
 
         # Set commit status based on verdict
         if verdict == "approve":
             set_commit_status(
                 repo, head_sha, "success",
-                "Gemini approved this PR", status_context,
+                "Claude approved this PR", status_context,
             )
         elif verdict == "request_changes":
             set_commit_status(
                 repo, head_sha, "failure",
-                "Gemini requested changes", status_context,
+                "Claude requested changes", status_context,
             )
         else:
+            # Comment without explicit approval — do not sign off
             set_commit_status(
                 repo, head_sha, "failure",
-                "Gemini did not explicitly approve", status_context,
+                "Claude did not explicitly approve", status_context,
             )
 
-    except Exception as e:
-        print(f"Error generating review: {e}")
+    except anthropic.APIError as e:
+        error_msg = f"Claude API error during review generation: {e}"
+        print(error_msg)
         pr.create_issue_comment(
-            f"Gemini Code Review encountered an error: {str(e)}"
+            f"Claude Code Review encountered an API error: {error_msg}"
         )
         set_commit_status(
             repo, head_sha, "error",
-            "Gemini review failed", status_context,
+            "Claude review failed (API error)", status_context,
+        )
+    except Exception as e:
+        error_msg = f"Claude review failed due to an unexpected error: {e}"
+        print(error_msg)
+        pr.create_issue_comment(
+            f"Claude Code Review encountered an error: {error_msg}"
+        )
+        set_commit_status(
+            repo, head_sha, "error",
+            "Claude review failed (unexpected error)", status_context,
         )
 
 
