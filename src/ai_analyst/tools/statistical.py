@@ -13,11 +13,16 @@ TestResult = namedtuple(
 
 
 def compute_descriptive_stats(series: pd.Series) -> dict[str, float]:
+    desc = series.describe()
     return {
-        "mean": series.mean(),
-        "std": series.std(),
-        "min": series.min(),
-        "max": series.max(),
+        "count": desc['count'],
+        "mean": desc['mean'],
+        "std": desc['std'],
+        "min": desc['min'],
+        "25%": desc['25%'],
+        "50%": desc['50%'],
+        "75%": desc['75%'],
+        "max": desc['max'],
     }
 
 
