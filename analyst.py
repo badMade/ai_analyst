@@ -12,7 +12,7 @@ from typing import Any
 
 import pandas as pd
 import numpy as np
-from anthropic import Anthropic, AsyncAnthropic
+from anthropic import Anthropic
 from pydantic import BaseModel
 
 from ai_analyst.tools.statistical import (
@@ -294,12 +294,18 @@ When analyzing data:
 Be thorough but efficient. Present results in a structured, easy-to-understand format."""
     
     def __init__(self, model: str = "claude-sonnet-4-20250514"):
-        settings = get_settings()
-        if not settings.anthropic_api_key:
-            raise ValueError("ANTHROPIC_API_KEY not set")
-        
-        self.client = Anthropic(api_key=settings.anthropic_api_key)
-        self.async_client = AsyncAnthropic(api_key=settings.anthropic_api_key)
+        # Get authentication method (Pro subscription first, API key as fallback)
+        auth_method, api_key = get_auth_method()
+
+        if auth_method == AuthMethod.PRO_SUBSCRIPTION:
+            # Use Pro subscription - Anthropic SDK auto-detects OAuth credentials
+            logger.info("Using Claude Pro subscription authentication")
+            self.client = Anthropic()
+        else:
+            # Use API key
+            logger.info("Using API key authentication")
+            self.client = Anthropic(api_key=api_key)
+
         self.model = model
         self.context = AnalysisContext()
         self.max_iterations = 15
@@ -501,30 +507,6 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
         Returns:
             Final analysis response
         """
-        try:
-            # Detect if we're already inside an event loop (e.g., Jupyter, async frameworks)
-            asyncio.get_running_loop()
-        except RuntimeError:
-            # No running loop; safe to use asyncio.run
-            return asyncio.run(self.analyze_async(query, file_path))
-        else:
-            # A loop is already running; instruct the caller to use the async API instead
-            raise RuntimeError(
-                "Detected an existing event loop. If you are in a Jupyter Notebook or "
-                "async environment, please use 'await analyst.analyze_async(...)' instead."
-            )
-
-    async def analyze_async(self, query: str, file_path: str | None = None) -> str:
-        """
-        Run analysis based on user query asynchronously.
-
-        Args:
-            query: Analysis request
-            file_path: Optional file to analyze
-
-        Returns:
-            Final analysis response
-        """
         # Build initial message
         user_content = query
         if file_path:
@@ -536,7 +518,7 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
         for iteration in range(self.max_iterations):
             logger.debug(f"Iteration {iteration + 1}")
             
-            response = await self.async_client.messages.create(
+            response = self.client.messages.create(
                 model=self.model,
                 max_tokens=4096,
                 system=self.SYSTEM_PROMPT,
@@ -565,8 +547,7 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                 for block in response.content:
                     if block.type == "tool_use":
                         logger.info(f"Executing tool: {block.name}")
-                        # Wrap blocking tool execution in thread
-                        result = await asyncio.to_thread(self._execute_tool, block.name, block.input)
+                        result = self._execute_tool(block.name, block.input)
                         tool_results.append({
                             "type": "tool_result",
                             "tool_use_id": block.id,
@@ -580,6 +561,10 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                 break
         
         return "Analysis reached maximum iterations. Please try a more specific query."
+    
+    async def analyze_async(self, query: str, file_path: str | None = None) -> str:
+        """Async wrapper for analyze."""
+        return await asyncio.to_thread(self.analyze, query, file_path)
 
 
 def create_analyst(model: str = "claude-sonnet-4-20250514") -> StandaloneAnalyst:
