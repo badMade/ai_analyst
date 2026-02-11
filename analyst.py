@@ -488,14 +488,17 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
             Final analysis response
         """
         try:
+            # Detect if we're already inside an event loop (e.g., Jupyter, async frameworks)
+            asyncio.get_running_loop()
+        except RuntimeError:
+            # No running loop; safe to use asyncio.run
             return asyncio.run(self.analyze_async(query, file_path))
-        except RuntimeError as e:
-            if "asyncio.run() cannot be called from a running event loop" in str(e):
-                raise RuntimeError(
-                    "Detected an existing event loop. If you are in a Jupyter Notebook or "
-                    "async environment, please use 'await analyst.analyze_async(...)' instead."
-                ) from e
-            raise
+        else:
+            # A loop is already running; instruct the caller to use the async API instead
+            raise RuntimeError(
+                "Detected an existing event loop. If you are in a Jupyter Notebook or "
+                "async environment, please use 'await analyst.analyze_async(...)' instead."
+            )
 
     async def analyze_async(self, query: str, file_path: str | None = None) -> str:
         """
