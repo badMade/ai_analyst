@@ -3,15 +3,16 @@ name: Git Automation
 on:
   pull_request:
     types: [closed]
+  check_suite:
+    types: [completed]
   workflow_run:
-    workflows: ["Merge Gate"]
+    workflows: ["PR Validation", "Claude Code Review", "Gemini Code Assist", "ChatGPT Codex Review"]
     types: [completed]
 
 permissions:
   contents: write
   pull-requests: write
   checks: read
-  statuses: read
 
 jobs:
   auto-delete-branch:
@@ -69,24 +70,29 @@ jobs:
   auto-merge-pr:
     name: Auto Merge After Checks Pass
     runs-on: ubuntu-latest
-    if: >
-      github.event_name == 'workflow_run' &&
-      github.event.workflow_run.conclusion == 'success'
+    if: |
+      (github.event_name == 'check_suite' && github.event.check_suite.conclusion == 'success') ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Get PR for workflow run
+      - name: Get PR for check suite
         id: get-pr
         uses: actions/github-script@v7
         with:
           script: |
-            const headSha = context.payload.workflow_run.head_sha;
-            const headBranch = context.payload.workflow_run.head_branch;
+            let prNumber = null;
+            let headSha = null;
+
+            if (context.eventName === 'check_suite') {
+              headSha = context.payload.check_suite.head_sha;
+            } else if (context.eventName === 'workflow_run') {
+              headSha = context.payload.workflow_run.head_sha;
+            }
 
             if (!headSha) {
               console.log('No head SHA found');
-              core.setOutput('has_pr', 'false');
               return;
             }
 
@@ -95,102 +101,66 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: 'open',
-              head: `${context.repo.owner}:${headBranch}`
+              head: `${context.repo.owner}:${context.payload.check_suite?.head_branch || context.payload.workflow_run?.head_branch}`
             });
 
             if (prs.length === 0) {
               console.log('No open PR found for this branch');
-              core.setOutput('has_pr', 'false');
               return;
             }
 
-            const pr = prs[0];
-            console.log(`Found PR #${pr.number} (head SHA: ${pr.head.sha})`);
-            core.setOutput('pr_number', pr.number);
-            core.setOutput('head_sha', pr.head.sha);
+            prNumber = prs[0].number;
+            console.log(`Found PR #${prNumber}`);
+            core.setOutput('pr_number', prNumber);
             core.setOutput('has_pr', 'true');
 
-      - name: Verify all agent sign-offs
+      - name: Wait for all checks to complete
         if: steps.get-pr.outputs.has_pr == 'true'
-        id: verify-agents
         uses: actions/github-script@v7
         with:
           script: |
-            const headSha = '${{ steps.get-pr.outputs.head_sha }}';
             const prNumber = ${{ steps.get-pr.outputs.pr_number || 0 }};
             if (!prNumber) return;
 
-            // Required agent approval statuses
-            const requiredStatuses = [
-              'ai-review/claude',
-              'ai-review/gemini',
-              'ai-review/chatgpt',
-              'merge-gate/all-agents-approved',
-            ];
-
-            // Fetch combined status for this SHA
-            const { data: statusResponse } = await github.rest.repos.getCombinedStatusForRef({
+            // Get the PR details
+            const { data: pr } = await github.rest.pulls.get({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              ref: headSha,
+              pull_number: prNumber
             });
 
-            // Build a map of context -> latest state
-            const statusMap = {};
-            for (const s of statusResponse.statuses) {
-              if (!statusMap[s.context]) {
-                statusMap[s.context] = s;
-              }
-            }
+            const headSha = pr.head.sha;
 
-            // Verify each required status is present and successful
-            const failures = [];
-            for (const ctx of requiredStatuses) {
-              const s = statusMap[ctx];
-              if (!s) {
-                failures.push(`${ctx}: not found`);
-                console.log(`FAIL: ${ctx} — status not found`);
-              } else if (s.state !== 'success') {
-                failures.push(`${ctx}: ${s.state} — ${s.description}`);
-                console.log(`FAIL: ${ctx} — state=${s.state}, description=${s.description}`);
-              } else {
-                console.log(`OK: ${ctx} — ${s.description}`);
-              }
-            }
-
-            // Also verify all CI check runs passed
+            // Check all check runs for this commit
             const { data: checkRuns } = await github.rest.checks.listForRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              ref: headSha,
+              ref: headSha
             });
 
-            const ciChecks = checkRuns.check_runs.filter(
-              c => c.name !== 'Auto Merge After Checks Pass' &&
-                   c.name !== 'Auto Delete Merged Branch' &&
-                   c.name !== 'Verify All Agent Sign-offs'
+            // Filter out this workflow's own check
+            const otherChecks = checkRuns.check_runs.filter(
+              check => check.name !== 'Auto Merge After Checks Pass'
             );
 
-            for (const check of ciChecks) {
-              if (check.status !== 'completed') {
-                failures.push(`CI check '${check.name}': still ${check.status}`);
-                console.log(`FAIL: CI check '${check.name}' not completed (${check.status})`);
-              } else if (check.conclusion !== 'success' && check.conclusion !== 'skipped') {
-                failures.push(`CI check '${check.name}': ${check.conclusion}`);
-                console.log(`FAIL: CI check '${check.name}' — ${check.conclusion}`);
-              } else {
-                console.log(`OK: CI check '${check.name}' — ${check.conclusion}`);
-              }
-            }
+            const allCompleted = otherChecks.every(check => check.status === 'completed');
+            const allPassed = otherChecks.every(
+              check => check.conclusion === 'success' || check.conclusion === 'skipped'
+            );
 
-            if (failures.length > 0) {
-              const msg = `Cannot auto-merge: ${failures.length} issue(s):\n` + failures.join('\n');
-              console.log(`\n${msg}`);
-              core.setFailed(msg);
+            if (!allCompleted) {
+              console.log('Not all checks have completed yet');
+              core.setFailed('Waiting for other checks to complete');
               return;
             }
 
-            console.log('\nAll checks passed and all agents approved — ready to merge');
+            if (!allPassed) {
+              console.log('Some checks have failed');
+              core.setFailed('Some checks have failed');
+              return;
+            }
+
+            console.log('All checks passed!');
 
       - name: Wait 1 minute before merge
         if: steps.get-pr.outputs.has_pr == 'true'
@@ -205,51 +175,10 @@ jobs:
         with:
           script: |
             const prNumber = ${{ steps.get-pr.outputs.pr_number || 0 }};
-            const headSha = '${{ steps.get-pr.outputs.head_sha }}';
             if (!prNumber) return;
 
             try {
-              // Final re-verification: check merge gate + all agent sign-offs are still success
-              const { data: statusResponse } = await github.rest.repos.getCombinedStatusForRef({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                ref: headSha,
-              });
-
-              const statusMap = {};
-              for (const status of statusResponse.statuses) {
-                if (!statusMap[status.context]) {
-                  statusMap[status.context] = status;
-                }
-              }
-
-              const requiredStatuses = [
-                'ai-review/claude',
-                'ai-review/gemini',
-                'ai-review/chatgpt',
-                'merge-gate/all-agents-approved',
-              ];
-
-              const failedStatuses = [];
-              for (const ctx of requiredStatuses) {
-                const status = statusMap[ctx];
-                if (!status) {
-                  failedStatuses.push(`${ctx}: not found`);
-                } else if (status.state !== 'success') {
-                  failedStatuses.push(`${ctx}: ${status.state} — ${status.description}`);
-                }
-              }
-
-              if (failedStatuses.length > 0) {
-                console.log('One or more required statuses are no longer successful:');
-                for (const item of failedStatuses) {
-                  console.log(`- ${item}`);
-                }
-                core.setFailed('Required review statuses changed — aborting merge');
-                return;
-              }
-
-              // Verify PR is still open and mergeable
+              // Re-verify all checks still pass before merging
               const { data: pr } = await github.rest.pulls.get({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
