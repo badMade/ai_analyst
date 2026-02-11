@@ -1,0 +1,211 @@
+name: Git Automation
+
+on:
+  pull_request:
+    types: [closed]
+  check_suite:
+    types: [completed]
+  workflow_run:
+    workflows: ["PR Validation", "Claude Code Review", "Google AI Code Review", "OpenAI Code Review"]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+
+jobs:
+  auto-delete-branch:
+    name: Auto Delete Merged Branch
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+    steps:
+      - name: Delete branch
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branch = context.payload.pull_request.head.ref;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            // Skip deletion for protected branch patterns
+            // Protected patterns include:
+            // - Exact matches: main, master, develop
+            // - Prefix matches: release/*, releases/*, hotfix/*
+            const protectedPatterns = ['main', 'master', 'develop'];
+            const protectedPrefixes = ['release/', 'releases/', 'hotfix/'];
+            
+            const isProtected = protectedPatterns.includes(branch) || 
+                                protectedPrefixes.some(prefix => branch.startsWith(prefix));
+            
+            if (isProtected) {
+              console.log(`Skipping deletion of protected branch: ${branch}`);
+              return;
+            }
+
+            try {
+              await github.rest.git.deleteRef({
+                owner,
+                repo,
+                ref: `heads/${branch}`
+              });
+              console.log(`Successfully deleted branch: ${branch}`);
+            } catch (error) {
+              // Handle specific error scenarios
+              if (error.status === 422) {
+                // 422 can mean branch doesn't exist or is protected
+                const errorMsg = error.message || '';
+                if (errorMsg.includes('Reference does not exist')) {
+                  console.log(`Branch ${branch} was already deleted`);
+                } else {
+                  console.log(`Unable to delete branch ${branch}: ${errorMsg}`);
+                }
+              } else if (error.status === 404) {
+                console.log(`Branch ${branch} not found (already deleted)`);
+              } else {
+                throw error;
+              }
+            }
+
+  auto-merge-pr:
+    name: Auto Merge After Checks Pass
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'check_suite' && github.event.check_suite.conclusion == 'success') ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Get PR for check suite
+        id: get-pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            let prNumber = null;
+            let headSha = null;
+
+            if (context.eventName === 'check_suite') {
+              headSha = context.payload.check_suite.head_sha;
+            } else if (context.eventName === 'workflow_run') {
+              headSha = context.payload.workflow_run.head_sha;
+            }
+
+            if (!headSha) {
+              console.log('No head SHA found');
+              return;
+            }
+
+            // Find PR associated with this commit
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              head: `${context.repo.owner}:${context.payload.check_suite?.head_branch || context.payload.workflow_run?.head_branch}`
+            });
+
+            if (prs.length === 0) {
+              console.log('No open PR found for this branch');
+              return;
+            }
+
+            prNumber = prs[0].number;
+            console.log(`Found PR #${prNumber}`);
+            core.setOutput('pr_number', prNumber);
+            core.setOutput('has_pr', 'true');
+
+      - name: Wait for all checks to complete
+        if: steps.get-pr.outputs.has_pr == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = ${{ steps.get-pr.outputs.pr_number || 0 }};
+            if (!prNumber) return;
+
+            // Get the PR details
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+
+            const headSha = pr.head.sha;
+
+            // Check all check runs for this commit
+            const { data: checkRuns } = await github.rest.checks.listForRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: headSha
+            });
+
+            // Filter out this workflow's own check
+            const otherChecks = checkRuns.check_runs.filter(
+              check => check.name !== 'Auto Merge After Checks Pass'
+            );
+
+            const allCompleted = otherChecks.every(check => check.status === 'completed');
+            const allPassed = otherChecks.every(
+              check => check.conclusion === 'success' || check.conclusion === 'skipped'
+            );
+
+            if (!allCompleted) {
+              console.log('Not all checks have completed yet');
+              core.setFailed('Waiting for other checks to complete');
+              return;
+            }
+
+            if (!allPassed) {
+              console.log('Some checks have failed');
+              core.setFailed('Some checks have failed');
+              return;
+            }
+
+            console.log('All checks passed!');
+
+      - name: Wait 1 minute before merge
+        if: steps.get-pr.outputs.has_pr == 'true'
+        run: |
+          echo "Waiting 1 minute before auto-merge..."
+          sleep 60
+          echo "Wait complete, proceeding with merge"
+
+      - name: Auto merge PR
+        if: steps.get-pr.outputs.has_pr == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = ${{ steps.get-pr.outputs.pr_number || 0 }};
+            if (!prNumber) return;
+
+            try {
+              // Re-verify all checks still pass before merging
+              const { data: pr } = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber
+              });
+
+              if (pr.state !== 'open') {
+                console.log('PR is no longer open');
+                return;
+              }
+
+              if (!pr.mergeable) {
+                console.log('PR is not mergeable');
+                core.setFailed('PR is not mergeable');
+                return;
+              }
+
+              // Perform the merge
+              await github.rest.pulls.merge({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber,
+                merge_method: 'squash'
+              });
+
+              console.log(`Successfully merged PR #${prNumber}`);
+            } catch (error) {
+              console.log(`Failed to merge PR: ${error.message}`);
+              core.setFailed(`Merge failed: ${error.message}`);
+            }

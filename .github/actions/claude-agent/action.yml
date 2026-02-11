@@ -1,0 +1,29 @@
+name: 'Claude Agent'
+description: 'Runs the Claude agent'
+inputs:
+  github_token:
+    description: 'GitHub token'
+    required: true
+  anthropic_api_key:
+    description: 'Anthropic API key'
+    required: true
+  model:
+    description: 'Claude model to use'
+    required: false
+    default: 'claude-3-opus-20240229'
+  tools:
+    description: 'Tools to use'
+    required: false
+    default: 'search, shell'
+runs:
+  using: "composite"
+  steps:
+    - run: pip install anthropic requests
+      shell: bash
+    - run: python ${{ github.action_path }}/../../scripts/claude_agent.py
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github_token }}
+        ANTHROPIC_API_KEY: ${{ inputs.anthropic_api_key }}
+        MODEL: ${{ inputs.model }}
+        TOOLS: ${{ inputs.tools }}

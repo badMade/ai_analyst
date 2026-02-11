@@ -8,7 +8,6 @@ Uses Claude API directly with tool definitions for a simpler standalone setup.
 import asyncio
 import json
 import logging
-from pathlib import Path
 from typing import Any
 
 import pandas as pd
@@ -22,7 +21,12 @@ from ai_analyst.tools.statistical import (
     test_correlation_significance,
     detect_trend,
 )
-from ai_analyst.utils.config import get_settings, sanitize_path
+from ai_analyst.utils.config import (
+    get_settings,
+    sanitize_path,
+    get_auth_method,
+    AuthMethod,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +67,7 @@ class AnalysisContext:
             "columns": len(df.columns),
             "column_names": df.columns.tolist(),
             "dtypes": {col: str(dtype) for col, dtype in df.dtypes.items()},
-            "null_counts": {col: int(df[col].isna().sum()) for col in df.columns}
+            "null_counts": df.isna().sum().to_dict()
         }
     
     def get_dataset(self, name: str) -> pd.DataFrame:
@@ -421,29 +425,39 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
             
             elif tool_name == "check_data_quality":
                 df = self.context.get_dataset(tool_input["dataset_name"])
-                
+
+                total_rows = len(df)
                 total_cells = df.size
-                null_cells = df.isna().sum().sum()
+                # Calculate null counts for all columns at once to avoid re-scanning in the loop
+                null_counts = df.isna().sum()
+                null_cells = null_counts.sum()
                 duplicate_rows = df.duplicated().sum()
-                
+
                 column_issues = {}
-                for col in df.columns:
-                    issues = []
-                    null_pct = df[col].isna().sum() / len(df) * 100
-                    if null_pct > 0:
-                        issues.append(f"Missing: {null_pct:.1f}%")
-                    if issues:
-                        column_issues[col] = issues
-                
+                # Vectorized calculation of null percentages using precomputed null_counts
+                null_pcts = (null_counts / total_rows) * 100
+
+                # Filter only columns with nulls
+                cols_with_nulls = null_pcts[null_pcts > 0]
+
+                for col, pct in cols_with_nulls.items():
+                    column_issues[col] = [f"Missing: {pct:.1f}%"]
+
+                null_percentage = (null_cells / total_cells) * 100 if total_cells else 0.0
+                duplicate_percentage = (
+                    (duplicate_rows / total_rows) * 100 if total_rows else 0.0
+                )
+                quality_score = 100 - (null_percentage * 0.5 + duplicate_percentage * 0.5)
+
                 result = {
-                    "total_rows": len(df),
+                    "total_rows": total_rows,
                     "total_columns": len(df.columns),
                     "null_cells": int(null_cells),
-                    "null_percentage": round(null_cells / total_cells * 100, 2),
+                    "null_percentage": round(null_percentage, 2),
                     "duplicate_rows": int(duplicate_rows),
-                    "duplicate_percentage": round(duplicate_rows / len(df) * 100, 2),
+                    "duplicate_percentage": round(duplicate_percentage, 2),
                     "column_issues": column_issues,
-                    "quality_score": round(100 - (null_cells / total_cells * 50) - (duplicate_rows / len(df) * 50), 1)
+                    "quality_score": round(quality_score, 2)
                 }
             
             elif tool_name == "test_normality":
