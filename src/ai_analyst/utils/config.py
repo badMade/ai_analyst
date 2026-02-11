@@ -107,7 +107,7 @@ def sanitize_path(path: str | Path) -> Path:
                 f"{path_str}"
             )
 
-    raw_path: Path = Path(path)
+    raw_path: Path = Path(path).expanduser()
 
     if raw_path.is_absolute():
         candidate: Path = raw_path.resolve(strict=False)
