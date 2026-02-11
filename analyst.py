@@ -299,6 +299,21 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
         self.model = model
         self.context = AnalysisContext()
         self.max_iterations = 15
+
+    async def aclose(self) -> None:
+        """Close HTTP clients asynchronously."""
+        await self.async_client.close()
+        self.client.close()
+
+    def close(self) -> None:
+        """Close HTTP clients, scheduling async cleanup when needed."""
+        self.client.close()
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            asyncio.run(self.async_client.close())
+        else:
+            loop.create_task(self.async_client.close())
     
     def _execute_tool(self, tool_name: str, tool_input: dict) -> str:
         """Execute a tool and return result as string."""
