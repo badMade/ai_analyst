@@ -1,6 +1,8 @@
 from pathlib import Path
 from pydantic_settings import BaseSettings
 
+BASE_DATA_DIR: Path = Path.cwd().resolve()
+
 class Settings(BaseSettings):
     anthropic_api_key: str
 
