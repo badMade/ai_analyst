@@ -93,7 +93,8 @@ def sanitize_path(path: str | Path) -> Path:
     Normalize and validate a filesystem path to prevent path traversal.
 
     All non-absolute paths are resolved relative to BASE_DATA_DIR, and the
-    final resolved path must remain within BASE_DATA_DIR.
+    final resolved path must remain within BASE_DATA_DIR. Absolute paths are
+    allowed and resolved as-is.
     """
     if os.name != "nt":
         path_str = str(path)
@@ -110,9 +111,9 @@ def sanitize_path(path: str | Path) -> Path:
     raw_path: Path = Path(path).expanduser()
 
     if raw_path.is_absolute():
-        candidate: Path = raw_path.resolve(strict=False)
-    else:
-        candidate = (BASE_DATA_DIR / raw_path).resolve(strict=False)
+        return raw_path.resolve(strict=False)
+
+    candidate = (BASE_DATA_DIR / raw_path).resolve(strict=False)
 
     if not candidate.is_relative_to(BASE_DATA_DIR):
         logging.error(
