@@ -60,7 +60,7 @@ class TestLoadDataset:
 
         assert result["name"] == "test_data"
 
-    def test_reject_absolute_path_outside_base_dir(self, analysis_context):
+    def test_load_absolute_path_outside_base_dir_raises_value_error(self, analysis_context):
         """Should reject absolute paths outside the configured base directory."""
         with pytest.raises(ValueError, match="outside of allowed base directory"):
             analysis_context.load_dataset("/nonexistent/path/data.csv")
