@@ -27,9 +27,11 @@ def compute_descriptive_stats(series: pd.Series) -> dict[str, float]:
 
 
 def test_normality(series: pd.Series, alpha: float = 0.05) -> TestResult:
-    """Performs the Shapiro-Wilk test for normality."""
+    """Performs a normality test (Shapiro-Wilk for N <= 5000, D'Agostino's K^2 for N > 5000)."""
+    n = len(series)
+
     # The Shapiro-Wilk test requires at least 3 data points.
-    if len(series) < 3:
+    if n < 3:
         return TestResult(
             "Shapiro-Wilk",
             None,
@@ -37,10 +39,17 @@ def test_normality(series: pd.Series, alpha: float = 0.05) -> TestResult:
             False,
             "Insufficient data (requires at least 3 samples)",
         )
-    statistic, p_value = stats.shapiro(series)
+
+    if n > 5000:
+        statistic, p_value = stats.normaltest(series)
+        test_name = "D'Agostino's K^2"
+    else:
+        statistic, p_value = stats.shapiro(series)
+        test_name = "Shapiro-Wilk"
+
     significant = p_value < alpha
     interpretation = "Not Normal" if significant else "Normal"
-    return TestResult("Shapiro-Wilk", statistic, p_value, significant, interpretation)
+    return TestResult(test_name, statistic, p_value, significant, interpretation)
 
 
 def test_correlation_significance(

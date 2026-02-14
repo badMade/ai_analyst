@@ -89,6 +89,25 @@ class TestTestNormality:
 
         assert result.test_name == "Shapiro-Wilk"
 
+    def test_returns_dagostinos_k2_for_large_n(self):
+        """Should use D'Agostino's K^2 test for large N."""
+        from ai_analyst.tools.statistical import test_normality
+
+        series = pd.Series(np.random.randn(5001))
+        result = test_normality(series)
+
+        assert result.test_name == "D'Agostino's K^2"
+
+    def test_handles_insufficient_data(self):
+        """Should handle insufficient data for normality test."""
+        from ai_analyst.tools.statistical import test_normality
+
+        series = pd.Series([1, 2])
+        result = test_normality(series)
+
+        assert result.test_name == "Shapiro-Wilk"
+        assert result.interpretation.startswith("Insufficient data")
+
     def test_result_has_numeric_values(self):
         """Result should have numeric statistic and p_value."""
         from ai_analyst.tools.statistical import test_normality
