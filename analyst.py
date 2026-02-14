@@ -16,7 +16,6 @@ from anthropic import Anthropic
 from pydantic import BaseModel
 
 from ai_analyst.tools.statistical import (
-    compute_descriptive_stats,
     test_normality,
     test_correlation_significance,
     detect_trend,
@@ -349,11 +348,26 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                 numeric_df = df.select_dtypes(include=[np.number])
                 stats = []
                 
-                for col in numeric_df.columns:
-                    stats.append({
-                        "column": col,
-                        **compute_descriptive_stats(numeric_df[col])
-                    })
+                if not numeric_df.empty and len(numeric_df.columns) > 0:
+                    counts = numeric_df.count()
+                    means = numeric_df.mean()
+                    stds = numeric_df.std()
+                    mins = numeric_df.min()
+                    maxs = numeric_df.max()
+                    quantiles = numeric_df.quantile([0.25, 0.5, 0.75])
+
+                    for col in numeric_df.columns:
+                        stats.append({
+                            "column": col,
+                            "count": counts[col],
+                            "mean": means[col],
+                            "std": stds[col],
+                            "min": mins[col],
+                            "25%": quantiles.loc[0.25, col],
+                            "50%": quantiles.loc[0.5, col],
+                            "75%": quantiles.loc[0.75, col],
+                            "max": maxs[col],
+                        })
                 
                 result = {"statistics": stats}
             
