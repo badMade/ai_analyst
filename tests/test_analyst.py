@@ -5,10 +5,9 @@ Tests the core analyst functionality including tool execution and API interactio
 """
 
 import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-import numpy as np
 
 
 class TestStandaloneAnalystInit:
@@ -16,7 +15,7 @@ class TestStandaloneAnalystInit:
 
     def test_init_creates_client(self, mock_settings):
         """Should create Anthropic client on init."""
-        with patch("anthropic.Anthropic") as mock_client:
+        with patch("analyst.Anthropic") as mock_client:
             from analyst import StandaloneAnalyst
 
             StandaloneAnalyst()
@@ -25,7 +24,7 @@ class TestStandaloneAnalystInit:
 
     def test_init_uses_provided_model(self, mock_settings):
         """Should use the provided model name."""
-        with patch("anthropic.Anthropic"):
+        with patch("analyst.Anthropic"):
             from analyst import StandaloneAnalyst
 
             analyst = StandaloneAnalyst(model="claude-3-opus-20240229")
@@ -34,8 +33,8 @@ class TestStandaloneAnalystInit:
 
     def test_init_creates_analysis_context(self, mock_settings):
         """Should create an AnalysisContext."""
-        with patch("anthropic.Anthropic"):
-            from analyst import StandaloneAnalyst, AnalysisContext
+        with patch("analyst.Anthropic"):
+            from analyst import AnalysisContext, StandaloneAnalyst
 
             analyst = StandaloneAnalyst()
 
@@ -43,7 +42,7 @@ class TestStandaloneAnalystInit:
 
     def test_init_sets_max_iterations(self, mock_settings):
         """Should set max iterations limit."""
-        with patch("anthropic.Anthropic"):
+        with patch("analyst.Anthropic"):
             from analyst import StandaloneAnalyst
 
             analyst = StandaloneAnalyst()
@@ -56,7 +55,7 @@ class TestStandaloneAnalystInit:
         with patch("analyst.get_auth_method") as mock_get_auth_method:
             mock_get_auth_method.side_effect = ValueError("Missing ANTHROPIC_API_KEY")
 
-            with patch("anthropic.Anthropic"):
+            with patch("analyst.Anthropic"):
                 from analyst import StandaloneAnalyst
 
                 with pytest.raises(ValueError, match="ANTHROPIC_API_KEY"):
@@ -69,7 +68,7 @@ class TestExecuteTool:
     @pytest.fixture
     def analyst_with_data(self, mock_settings, sample_csv_file):
         """Create analyst with loaded dataset."""
-        with patch("anthropic.Anthropic"):
+        with patch("analyst.Anthropic"):
             from analyst import StandaloneAnalyst
 
             analyst = StandaloneAnalyst()
@@ -78,7 +77,7 @@ class TestExecuteTool:
 
     def test_execute_load_dataset(self, mock_settings, sample_csv_file):
         """Should execute load_dataset tool."""
-        with patch("anthropic.Anthropic"):
+        with patch("analyst.Anthropic"):
             from analyst import StandaloneAnalyst
 
             analyst = StandaloneAnalyst()
@@ -242,7 +241,7 @@ class TestAnalyze:
     @pytest.fixture
     def analyst(self, mock_settings):
         """Create analyst with mocked client."""
-        with patch("anthropic.Anthropic") as mock_client_class:
+        with patch("analyst.Anthropic") as mock_client_class:
             from analyst import StandaloneAnalyst
 
             analyst = StandaloneAnalyst()
@@ -317,32 +316,53 @@ class TestAnalyzeAsync:
     @pytest.fixture
     def analyst(self, mock_settings):
         """Create analyst with mocked client."""
-        with patch("anthropic.Anthropic"):
+        with patch("analyst.Anthropic"), patch("analyst.AsyncAnthropic"):
             from analyst import StandaloneAnalyst
 
             analyst = StandaloneAnalyst()
-            analyst.client = MagicMock()
+            analyst.async_client = MagicMock()
+            analyst.async_client.messages.create = AsyncMock()
             return analyst
 
     @pytest.mark.asyncio
-    async def test_analyze_async_calls_analyze(self, analyst, mock_api_response_end_turn):
-        """Async method should call sync analyze."""
-        analyst.client.messages.create.return_value = mock_api_response_end_turn
+    async def test_analyze_async_returns_text_on_end_turn(self, analyst, mock_api_response_end_turn):
+        """Async method should return text when API ends turn."""
+        analyst.async_client.messages.create.return_value = mock_api_response_end_turn
 
         result = await analyst.analyze_async("Test query")
 
         assert result == "Analysis complete. The data shows positive trends."
+        analyst.async_client.messages.create.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_analyze_async_with_file_path(self, analyst, mock_api_response_end_turn):
         """Async method should pass file_path."""
-        analyst.client.messages.create.return_value = mock_api_response_end_turn
+        analyst.async_client.messages.create.return_value = mock_api_response_end_turn
 
         await analyst.analyze_async("Test", file_path="/data/file.csv")
 
-        call_args = analyst.client.messages.create.call_args
+        call_args = analyst.async_client.messages.create.call_args
         messages = call_args.kwargs["messages"]
         assert "/data/file.csv" in messages[0]["content"]
+
+    @pytest.mark.asyncio
+    async def test_analyze_async_processes_tool_use(self, analyst, mock_api_response_tool_use, mock_api_response_end_turn, sample_csv_file):
+        """Should process tool use requests in async mode."""
+        analyst.async_client.messages.create.side_effect = [
+            mock_api_response_tool_use,
+            mock_api_response_end_turn
+        ]
+
+        # Mock the tool to not fail
+        mock_api_response_tool_use.content[0].input = {
+            "file_path": sample_csv_file,
+            "name": "test"
+        }
+
+        result = await analyst.analyze_async("Load the data")
+
+        assert isinstance(result, str)
+        assert analyst.async_client.messages.create.call_count == 2
 
 
 class TestCreateAnalyst:
@@ -350,8 +370,8 @@ class TestCreateAnalyst:
 
     def test_create_analyst_returns_instance(self, mock_settings):
         """Should return StandaloneAnalyst instance."""
-        with patch("anthropic.Anthropic"):
-            from analyst import create_analyst, StandaloneAnalyst
+        with patch("analyst.Anthropic"):
+            from analyst import StandaloneAnalyst, create_analyst
 
             analyst = create_analyst()
 
@@ -359,7 +379,7 @@ class TestCreateAnalyst:
 
     def test_create_analyst_with_model(self, mock_settings):
         """Should pass model to constructor."""
-        with patch("anthropic.Anthropic"):
+        with patch("analyst.Anthropic"):
             from analyst import create_analyst
 
             analyst = create_analyst(model="claude-3-haiku-20240307")
