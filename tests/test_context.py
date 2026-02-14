@@ -60,10 +60,15 @@ class TestLoadDataset:
 
         assert result["name"] == "test_data"
 
-    def test_load_file_not_found(self, analysis_context):
-        """Should raise FileNotFoundError for missing files."""
-        with pytest.raises(FileNotFoundError, match="File not found"):
+    def test_load_absolute_path_outside_base_dir_raises_value_error(self, analysis_context):
+        """Should reject absolute paths outside the configured base directory."""
+        with pytest.raises(ValueError, match="outside of allowed base directory"):
             analysis_context.load_dataset("/nonexistent/path/data.csv")
+
+    def test_load_missing_relative_file_not_found(self, analysis_context):
+        """Should raise FileNotFoundError for missing relative files inside base dir."""
+        with pytest.raises(FileNotFoundError, match="File not found"):
+            analysis_context.load_dataset("missing/data.csv")
 
     def test_load_unsupported_format(self, analysis_context, tmp_path):
         """Should raise ValueError for unsupported file formats."""
