@@ -8,10 +8,12 @@ Uses Claude API directly with tool definitions for a simpler standalone setup.
 import asyncio
 import json
 import logging
+from typing import Any
 
 import numpy as np
 import pandas as pd
 from anthropic import Anthropic, AsyncAnthropic
+from anthropic.types.message import Message
 
 from ai_analyst.tools.statistical import (
     compute_descriptive_stats,
@@ -339,21 +341,26 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
         """Allow tests to inject a mocked async client."""
         self._async_client = value
 
-    def _build_messages(self, query: str, file_path: str | None = None) -> list[dict]:
+    def _build_messages(self, query: str, file_path: str | None = None) -> list[dict[str, Any]]:
         """Build initial message payload for the Anthropic API."""
         user_content = query
         if file_path:
             user_content = f"Analyze the file at: {file_path}\n\n{query}"
         return [{"role": "user", "content": user_content}]
 
-    def _extract_text_response(self, response) -> str:
+    def _extract_text_response(self, response: Message) -> str:
         """Extract the final text content from a model response."""
         for block in response.content:
             if hasattr(block, "text"):
                 return block.text
         return ""
 
-    def _execute_tool(self, tool_name: str, tool_input: dict, context: AnalysisContext | None = None) -> str:
+    def _execute_tool(
+        self,
+        tool_name: str,
+        tool_input: dict[str, Any],
+        context: AnalysisContext | None = None,
+    ) -> str:
         """Execute a tool and return result as string."""
         context = context or self.context
         try:
@@ -540,7 +547,12 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
             logger.exception(f"Tool execution error: {tool_name}")
             return json.dumps({"error": str(e)})
 
-    def _process_tool_use_blocks(self, response, messages: list[dict], context: AnalysisContext) -> None:
+    def _process_tool_use_blocks(
+        self,
+        response: Message,
+        messages: list[dict[str, Any]],
+        context: AnalysisContext,
+    ) -> None:
         """Process tool use blocks for sync analysis loop."""
         messages.append({"role": "assistant", "content": response.content})
 
@@ -553,7 +565,12 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
 
         messages.append({"role": "user", "content": tool_results})
 
-    async def _process_tool_use_blocks_async(self, response, messages: list[dict], context: AnalysisContext) -> None:
+    async def _process_tool_use_blocks_async(
+        self,
+        response: Message,
+        messages: list[dict[str, Any]],
+        context: AnalysisContext,
+    ) -> None:
         """Process tool use blocks for async analysis loop."""
         messages.append({"role": "assistant", "content": response.content})
 
@@ -578,7 +595,7 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
             Final analysis response
         """
         messages = self._build_messages(query=query, file_path=file_path)
-        context = self.context
+        context = AnalysisContext()
 
         # Agentic loop
         for iteration in range(self.max_iterations):
