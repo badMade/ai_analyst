@@ -407,15 +407,46 @@ class TestAnalyzeAsync:
             analyst.analyze_async("query two"),
         )
 
+        # Group tool results by originating user prompt to verify per-call isolation.
         calls = analyst.async_client.messages.create.call_args_list
+        results_by_query: dict[str, list[dict]] = {"query one": [], "query two": []}
+
         for call in calls:
             kwargs = call.kwargs
-            if len(kwargs["messages"]) > 1:
-                tool_result_content = kwargs["messages"][-1]["content"][0]["content"]
-                tool_result = json.loads(tool_result_content)
+            messages = kwargs.get("messages", [])
+            if len(messages) <= 1:
+                # Initial call with only the user message; no tool result yet.
+                continue
+
+            # The first message in the conversation should be the original user prompt.
+            first_message_content = messages[0]["content"][0]["text"]
+            if first_message_content not in results_by_query:
+                # Ignore any messages that are not part of the two concurrent queries.
+                continue
+
+            tool_result_content = messages[-1]["content"][0]["content"]
+            tool_result = json.loads(tool_result_content)
+            results_by_query[first_message_content].append(tool_result)
+
+        # Each concurrent call should independently see an empty dataset list.
+        for query, tool_results in results_by_query.items():
+            assert tool_results, f"No tool results captured for {query}"
+            for tool_result in tool_results:
                 assert tool_result["count"] == 0
+                # If the tool returns an explicit list of datasets, it should be empty.
+                if "datasets" in tool_result:
+                    assert isinstance(tool_result["datasets"], list)
+                    assert not tool_result["datasets"]
 
-
+        # Demonstrate that parsed tool results for each query are independent objects.
+        if (
+            results_by_query["query one"]
+            and results_by_query["query two"]
+            and "datasets" in results_by_query["query one"][0]
+            and "datasets" in results_by_query["query two"][0]
+        ):
+            results_by_query["query one"][0]["datasets"].append("dummy-dataset")
+            assert results_by_query["query two"][0]["datasets"] == []
 class TestCreateAnalyst:
     """Tests for create_analyst factory function."""
 
