@@ -4,9 +4,9 @@ Tests for statistical analysis functions.
 Tests the statistical helper functions used by the analyst.
 """
 
-import pytest
-import pandas as pd
 import numpy as np
+import pandas as pd
+import pytest
 
 
 class TestComputeDescriptiveStats:
@@ -69,7 +69,7 @@ class TestTestNormality:
 
     def test_returns_test_result(self):
         """Should return a TestResult namedtuple."""
-        from ai_analyst.tools.statistical import test_normality, TestResult
+        from ai_analyst.tools.statistical import test_normality
 
         series = pd.Series(np.random.randn(100))
         result = test_normality(series)
@@ -197,3 +197,63 @@ class TestTestResultNamedTuple:
 
         with pytest.raises(AttributeError):
             result.statistic = 0.99
+
+
+class TestComputeDataframeStats:
+    """Tests for compute_dataframe_stats function."""
+
+    def test_computes_stats_for_dataframe(self):
+        """Should compute stats for all numeric columns."""
+        from ai_analyst.tools.statistical import compute_dataframe_stats
+
+        df = pd.DataFrame({
+            "a": [1, 2, 3, 4, 5],
+            "b": [10, 20, 30, 40, 50],
+            "c": ["x", "y", "z", "w", "v"]
+        })
+
+        result = compute_dataframe_stats(df)
+
+        assert len(result) == 2
+
+        # Check column 'a'
+        stats_a = next(r for r in result if r["column"] == "a")
+        assert stats_a["mean"] == 3.0
+        assert stats_a["min"] == 1.0
+        assert stats_a["max"] == 5.0
+
+        # Check column 'b'
+        stats_b = next(r for r in result if r["column"] == "b")
+        assert stats_b["mean"] == 30.0
+        assert stats_b["min"] == 10.0
+        assert stats_b["max"] == 50.0
+
+    def test_handles_empty_dataframe(self):
+        """Should return empty list for empty DataFrame."""
+        from ai_analyst.tools.statistical import compute_dataframe_stats
+
+        df = pd.DataFrame()
+        result = compute_dataframe_stats(df)
+        assert result == []
+
+    def test_handles_no_numeric_columns(self):
+        """Should return empty list if no numeric columns."""
+        from ai_analyst.tools.statistical import compute_dataframe_stats
+
+        df = pd.DataFrame({"a": ["x", "y"], "b": ["z", "w"]})
+        result = compute_dataframe_stats(df)
+        assert result == []
+
+    def test_handles_missing_values(self):
+        """Should handle missing values correctly."""
+        from ai_analyst.tools.statistical import compute_dataframe_stats
+
+        df = pd.DataFrame({
+            "a": [1, 2, np.nan, 4, 5]
+        })
+
+        result = compute_dataframe_stats(df)
+        stats = result[0]
+
+        assert stats["count"] == 4.0
+        assert stats["mean"] == 3.0

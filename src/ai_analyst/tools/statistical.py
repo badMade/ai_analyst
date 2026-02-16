@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections import namedtuple
 from typing import Sequence
 
+import numpy as np
 import pandas as pd
 from scipy import stats
 
@@ -24,6 +25,47 @@ def compute_descriptive_stats(series: pd.Series) -> dict[str, float]:
         "75%": desc['75%'],
         "max": desc['max'],
     }
+
+
+def compute_dataframe_stats(df: pd.DataFrame) -> list[dict[str, float | str]]:
+    """
+    Compute descriptive statistics for all numeric columns in a DataFrame using optimized vectorized operations.
+
+    Args:
+        df: Input DataFrame
+
+    Returns:
+        List of dictionaries containing statistics for each column
+    """
+    if df.empty:
+        return []
+
+    numeric_df = df.select_dtypes(include=[np.number])
+    if numeric_df.empty:
+        return []
+
+    # Manual aggregation is faster than df.describe() or iterating over columns
+    counts = numeric_df.count()
+    means = numeric_df.mean()
+    stds = numeric_df.std()
+    mins = numeric_df.min()
+    quantiles = numeric_df.quantile([0.25, 0.50, 0.75])
+    maxs = numeric_df.max()
+
+    stats_list = []
+    for col in numeric_df.columns:
+        stats_list.append({
+            "column": col,
+            "count": float(counts[col]),
+            "mean": float(means[col]),
+            "std": float(stds[col]),
+            "min": float(mins[col]),
+            "25%": float(quantiles.loc[0.25, col]),
+            "50%": float(quantiles.loc[0.50, col]),
+            "75%": float(quantiles.loc[0.75, col]),
+            "max": float(maxs[col]),
+        })
+    return stats_list
 
 
 def test_normality(series: pd.Series, alpha: float = 0.05) -> TestResult:
