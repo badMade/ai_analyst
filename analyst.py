@@ -341,7 +341,7 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
         """Allow tests to inject a mocked async client."""
         self._async_client = value
 
-    def _build_messages(self, query: str, file_path: str | None = None) -> list[dict]:
+    def _build_messages(self, query: str, file_path: str | None = None) -> list[dict[str, Any]]:
         """Build initial message payload for the Anthropic API."""
         user_content = query
         if file_path:
@@ -355,7 +355,12 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                 return block.text
         return ""
 
-    def _execute_tool(self, tool_name: str, tool_input: dict, context: AnalysisContext | None = None) -> str:
+    def _execute_tool(
+        self,
+        tool_name: str,
+        tool_input: dict[str, Any],
+        context: AnalysisContext | None = None,
+    ) -> str:
         """Execute a tool and return result as string."""
         context = context or self.context
         try:
@@ -590,7 +595,7 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
             Final analysis response
         """
         messages = self._build_messages(query=query, file_path=file_path)
-        context = self.context
+        context = AnalysisContext()
 
         # Agentic loop
         for iteration in range(self.max_iterations):
