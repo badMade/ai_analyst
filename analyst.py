@@ -575,7 +575,7 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
             Final analysis response
         """
         messages = self._build_messages(query=query, file_path=file_path)
-        context = AnalysisContext()
+        context = self.context
 
         # Agentic loop
         for iteration in range(self.max_iterations):
