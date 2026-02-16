@@ -303,7 +303,10 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
         self._auth_method = auth_method
         self._client: Anthropic | None = None
         self._async_client: AsyncAnthropic | None = None
-        self.context = AnalysisContext()
+        # Backwards compatibility: some callers (e.g. direct `_execute_tool()` usage)
+        # may rely on a persistent `context` attribute. New analysis calls should use
+        # per-request AnalysisContext instances created inside `analyze`/`analyze_async`.
+        self.context: AnalysisContext = AnalysisContext()
         self.max_iterations = 15
 
     @property
