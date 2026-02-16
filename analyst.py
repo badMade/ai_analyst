@@ -308,23 +308,40 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
         self.context = AnalysisContext()
         self.max_iterations = 15
 
-    def _execute_tool(self, tool_name: str, tool_input: dict) -> str:
+    def _build_messages(self, query: str, file_path: str | None = None) -> list[dict]:
+        """Build initial conversation messages for analysis."""
+        user_content = query
+        if file_path:
+            user_content = f"Analyze the file at: {file_path}\n\n{query}"
+
+        return [{"role": "user", "content": user_content}]
+
+    @staticmethod
+    def _extract_response_text(response) -> str:
+        """Extract text blocks from an Anthropic response."""
+        for block in response.content:
+            if hasattr(block, "text"):
+                return block.text
+        return ""
+
+    def _execute_tool(self, tool_name: str, tool_input: dict, context: AnalysisContext | None = None) -> str:
         """Execute a tool and return result as string."""
+        context = context or self.context
         try:
             if tool_name == "load_dataset":
-                result = self.context.load_dataset(
+                result = context.load_dataset(
                     tool_input["file_path"],
                     tool_input.get("name")
                 )
 
             elif tool_name == "list_datasets":
                 result = {
-                    "datasets": list(self.context.datasets.keys()),
-                    "count": len(self.context.datasets)
+                    "datasets": list(context.datasets.keys()),
+                    "count": len(context.datasets)
                 }
 
             elif tool_name == "preview_data":
-                df = self.context.get_dataset(tool_input["dataset_name"])
+                df = context.get_dataset(tool_input["dataset_name"])
                 n_rows = tool_input.get("n_rows", 10)
                 columns = tool_input.get("columns")
 
@@ -338,7 +355,7 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                 }
 
             elif tool_name == "describe_statistics":
-                df = self.context.get_dataset(tool_input["dataset_name"])
+                df = context.get_dataset(tool_input["dataset_name"])
                 columns = tool_input.get("columns")
 
                 if columns:
@@ -356,7 +373,7 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                 result = {"statistics": stats}
 
             elif tool_name == "compute_correlation":
-                df = self.context.get_dataset(tool_input["dataset_name"])
+                df = context.get_dataset(tool_input["dataset_name"])
                 columns = tool_input.get("columns")
                 method = tool_input.get("method", "pearson")
 
@@ -382,7 +399,7 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                 result = {"correlations": correlations, "method": method}
 
             elif tool_name == "detect_outliers":
-                df = self.context.get_dataset(tool_input["dataset_name"])
+                df = context.get_dataset(tool_input["dataset_name"])
                 column = tool_input["column"]
                 method = tool_input.get("method", "iqr")
                 threshold = tool_input.get("threshold", 1.5 if method == "iqr" else 3)
@@ -413,7 +430,7 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                 }
 
             elif tool_name == "group_analysis":
-                df = self.context.get_dataset(tool_input["dataset_name"])
+                df = context.get_dataset(tool_input["dataset_name"])
                 group_by = tool_input["group_by"]
                 agg_column = tool_input["agg_column"]
                 agg_functions = tool_input.get("agg_functions", ["count", "mean", "sum", "min", "max"])
@@ -428,7 +445,7 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                 }
 
             elif tool_name == "check_data_quality":
-                df = self.context.get_dataset(tool_input["dataset_name"])
+                df = context.get_dataset(tool_input["dataset_name"])
 
                 total_rows = len(df)
                 total_cells = df.size
@@ -465,7 +482,7 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                 }
 
             elif tool_name == "test_normality":
-                df = self.context.get_dataset(tool_input["dataset_name"])
+                df = context.get_dataset(tool_input["dataset_name"])
                 column = tool_input["column"]
 
                 test_result = test_normality(df[column].dropna())
@@ -479,7 +496,7 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                 }
 
             elif tool_name == "analyze_trend":
-                df = self.context.get_dataset(tool_input["dataset_name"])
+                df = context.get_dataset(tool_input["dataset_name"])
                 column = tool_input["column"]
 
                 trend_result = detect_trend(df[column].dropna().values)
@@ -494,6 +511,44 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
             logger.exception(f"Tool execution error: {tool_name}")
             return json.dumps({"error": str(e)})
 
+    def _process_tool_use(self, response, messages: list[dict], context: AnalysisContext) -> None:
+        """Process tool use blocks for synchronous analysis."""
+        messages.append({"role": "assistant", "content": response.content})
+
+        tool_results = []
+        for block in response.content:
+            if block.type == "tool_use":
+                logger.info(f"Executing tool: {block.name}")
+                result = self._execute_tool(block.name, block.input, context)
+                tool_results.append(
+                    {
+                        "type": "tool_result",
+                        "tool_use_id": block.id,
+                        "content": result,
+                    }
+                )
+
+        messages.append({"role": "user", "content": tool_results})
+
+    async def _process_tool_use_async(self, response, messages: list[dict], context: AnalysisContext) -> None:
+        """Process tool use blocks for asynchronous analysis."""
+        messages.append({"role": "assistant", "content": response.content})
+
+        tool_results = []
+        for block in response.content:
+            if block.type == "tool_use":
+                logger.info(f"Executing tool: {block.name}")
+                result = await asyncio.to_thread(self._execute_tool, block.name, block.input, context)
+                tool_results.append(
+                    {
+                        "type": "tool_result",
+                        "tool_use_id": block.id,
+                        "content": result,
+                    }
+                )
+
+        messages.append({"role": "user", "content": tool_results})
+
     def analyze(self, query: str, file_path: str | None = None) -> str:
         """
         Run analysis based on user query.
@@ -505,12 +560,8 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
         Returns:
             Final analysis response
         """
-        # Build initial message
-        user_content = query
-        if file_path:
-            user_content = f"Analyze the file at: {file_path}\n\n{query}"
-
-        messages = [{"role": "user", "content": user_content}]
+        context = AnalysisContext()
+        messages = self._build_messages(query, file_path)
 
         # Agentic loop
         for iteration in range(self.max_iterations):
@@ -526,33 +577,11 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
 
             # Check if done
             if response.stop_reason == "end_turn":
-                # Extract text response
-                for block in response.content:
-                    if hasattr(block, "text"):
-                        return block.text
-                return ""
+                return self._extract_response_text(response)
 
             # Process tool use
             if response.stop_reason == "tool_use":
-                # Add assistant message
-                messages.append({
-                    "role": "assistant",
-                    "content": response.content
-                })
-
-                # Execute tools and add results
-                tool_results = []
-                for block in response.content:
-                    if block.type == "tool_use":
-                        logger.info(f"Executing tool: {block.name}")
-                        result = self._execute_tool(block.name, block.input)
-                        tool_results.append({
-                            "type": "tool_result",
-                            "tool_use_id": block.id,
-                            "content": result
-                        })
-
-                messages.append({"role": "user", "content": tool_results})
+                self._process_tool_use(response, messages, context)
             else:
                 # Unexpected stop reason
                 logger.warning(f"Unexpected stop reason: {response.stop_reason}")
@@ -571,12 +600,8 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
         Returns:
             Final analysis response
         """
-        # Build initial message
-        user_content = query
-        if file_path:
-            user_content = f"Analyze the file at: {file_path}\n\n{query}"
-
-        messages = [{"role": "user", "content": user_content}]
+        context = AnalysisContext()
+        messages = self._build_messages(query, file_path)
 
         # Agentic loop
         for iteration in range(self.max_iterations):
@@ -592,34 +617,11 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
 
             # Check if done
             if response.stop_reason == "end_turn":
-                # Extract text response
-                for block in response.content:
-                    if hasattr(block, "text"):
-                        return block.text
-                return ""
+                return self._extract_response_text(response)
 
             # Process tool use
             if response.stop_reason == "tool_use":
-                # Add assistant message
-                messages.append({
-                    "role": "assistant",
-                    "content": response.content
-                })
-
-                # Execute tools and add results
-                tool_results = []
-                for block in response.content:
-                    if block.type == "tool_use":
-                        logger.info(f"Executing tool: {block.name}")
-                        # Execute tool in thread to avoid blocking loop
-                        result = await asyncio.to_thread(self._execute_tool, block.name, block.input)
-                        tool_results.append({
-                            "type": "tool_result",
-                            "tool_use_id": block.id,
-                            "content": result
-                        })
-
-                messages.append({"role": "user", "content": tool_results})
+                await self._process_tool_use_async(response, messages, context)
             else:
                 # Unexpected stop reason
                 logger.warning(f"Unexpected stop reason: {response.stop_reason}")
