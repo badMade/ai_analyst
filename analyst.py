@@ -13,7 +13,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 from anthropic import Anthropic, AsyncAnthropic
-from anthropic.types.message import Message
+from anthropic.types import Message
 
 from ai_analyst.tools.statistical import (
     compute_descriptive_stats,
@@ -551,7 +551,7 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
         self,
         response: Message,
         messages: list[dict[str, Any]],
-        context: AnalysisContext,
+        context: AnalysisContext
     ) -> None:
         """Process tool use blocks for sync analysis loop."""
         messages.append({"role": "assistant", "content": response.content})
@@ -569,7 +569,7 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
         self,
         response: Message,
         messages: list[dict[str, Any]],
-        context: AnalysisContext,
+        context: AnalysisContext
     ) -> None:
         """Process tool use blocks for async analysis loop."""
         messages.append({"role": "assistant", "content": response.content})
