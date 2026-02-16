@@ -8,10 +8,12 @@ Uses Claude API directly with tool definitions for a simpler standalone setup.
 import asyncio
 import json
 import logging
+from typing import Any
 
 import numpy as np
 import pandas as pd
 from anthropic import Anthropic, AsyncAnthropic
+from anthropic.types import Message
 
 from ai_analyst.tools.statistical import (
     compute_descriptive_stats,
@@ -346,7 +348,7 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
             user_content = f"Analyze the file at: {file_path}\n\n{query}"
         return [{"role": "user", "content": user_content}]
 
-    def _extract_text_response(self, response) -> str:
+    def _extract_text_response(self, response: Message) -> str:
         """Extract the final text content from a model response."""
         for block in response.content:
             if hasattr(block, "text"):
@@ -540,7 +542,12 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
             logger.exception(f"Tool execution error: {tool_name}")
             return json.dumps({"error": str(e)})
 
-    def _process_tool_use_blocks(self, response, messages: list[dict], context: AnalysisContext) -> None:
+    def _process_tool_use_blocks(
+        self,
+        response: Message,
+        messages: list[dict[str, Any]],
+        context: AnalysisContext
+    ) -> None:
         """Process tool use blocks for sync analysis loop."""
         messages.append({"role": "assistant", "content": response.content})
 
@@ -553,7 +560,12 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
 
         messages.append({"role": "user", "content": tool_results})
 
-    async def _process_tool_use_blocks_async(self, response, messages: list[dict], context: AnalysisContext) -> None:
+    async def _process_tool_use_blocks_async(
+        self,
+        response: Message,
+        messages: list[dict[str, Any]],
+        context: AnalysisContext
+    ) -> None:
         """Process tool use blocks for async analysis loop."""
         messages.append({"role": "assistant", "content": response.content})
 
