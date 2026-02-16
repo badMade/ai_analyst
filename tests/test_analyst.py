@@ -4,6 +4,7 @@ Tests for StandaloneAnalyst class.
 Tests the core analyst functionality including tool execution and API interaction.
 """
 
+import asyncio
 import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -14,17 +15,19 @@ class TestStandaloneAnalystInit:
     """Tests for StandaloneAnalyst initialization."""
 
     def test_init_creates_client(self, mock_settings):
-        """Should create Anthropic client on init."""
+        """Should lazily create Anthropic client when first used."""
         with patch("analyst.Anthropic") as mock_client:
             from analyst import StandaloneAnalyst
 
-            StandaloneAnalyst()
+            analyst = StandaloneAnalyst()
+            mock_client.assert_not_called()
 
+            _ = analyst.client
             mock_client.assert_called_once()
 
     def test_init_uses_provided_model(self, mock_settings):
         """Should use the provided model name."""
-        with patch("analyst.Anthropic"):
+        with patch("analyst.Anthropic"), patch("analyst.AsyncAnthropic"):
             from analyst import StandaloneAnalyst
 
             analyst = StandaloneAnalyst(model="claude-3-opus-20240229")
@@ -33,7 +36,7 @@ class TestStandaloneAnalystInit:
 
     def test_init_creates_analysis_context(self, mock_settings):
         """Should create an AnalysisContext."""
-        with patch("analyst.Anthropic"):
+        with patch("analyst.Anthropic"), patch("analyst.AsyncAnthropic"):
             from analyst import AnalysisContext, StandaloneAnalyst
 
             analyst = StandaloneAnalyst()
@@ -42,7 +45,7 @@ class TestStandaloneAnalystInit:
 
     def test_init_sets_max_iterations(self, mock_settings):
         """Should set max iterations limit."""
-        with patch("analyst.Anthropic"):
+        with patch("analyst.Anthropic"), patch("analyst.AsyncAnthropic"):
             from analyst import StandaloneAnalyst
 
             analyst = StandaloneAnalyst()
@@ -68,7 +71,7 @@ class TestExecuteTool:
     @pytest.fixture
     def analyst_with_data(self, mock_settings, sample_csv_file):
         """Create analyst with loaded dataset."""
-        with patch("analyst.Anthropic"):
+        with patch("analyst.Anthropic"), patch("analyst.AsyncAnthropic"):
             from analyst import StandaloneAnalyst
 
             analyst = StandaloneAnalyst()
@@ -77,7 +80,7 @@ class TestExecuteTool:
 
     def test_execute_load_dataset(self, mock_settings, sample_csv_file):
         """Should execute load_dataset tool."""
-        with patch("analyst.Anthropic"):
+        with patch("analyst.Anthropic"), patch("analyst.AsyncAnthropic"):
             from analyst import StandaloneAnalyst
 
             analyst = StandaloneAnalyst()
@@ -241,7 +244,7 @@ class TestAnalyze:
     @pytest.fixture
     def analyst(self, mock_settings):
         """Create analyst with mocked client."""
-        with patch("analyst.Anthropic") as mock_client_class:
+        with patch("analyst.Anthropic"), patch("analyst.AsyncAnthropic"):
             from analyst import StandaloneAnalyst
 
             analyst = StandaloneAnalyst()
@@ -364,13 +367,92 @@ class TestAnalyzeAsync:
         assert isinstance(result, str)
         assert analyst.async_client.messages.create.call_count == 2
 
+    @pytest.mark.asyncio
+    async def test_analyze_async_concurrent_execution_is_isolated(
+        self,
+        analyst,
+        mock_api_response_tool_use,
+        mock_api_response_end_turn,
+    ):
+        """Concurrent async runs should not share dataset context."""
+        first_tool = MagicMock()
+        first_tool.type = "tool_use"
+        first_tool.name = "list_datasets"
+        first_tool.id = "tool-1"
+        first_tool.input = {}
 
+        second_tool = MagicMock()
+        second_tool.type = "tool_use"
+        second_tool.name = "list_datasets"
+        second_tool.id = "tool-2"
+        second_tool.input = {}
+
+        first_response = MagicMock()
+        first_response.stop_reason = "tool_use"
+        first_response.content = [first_tool]
+
+        second_response = MagicMock()
+        second_response.stop_reason = "tool_use"
+        second_response.content = [second_tool]
+
+        analyst.async_client.messages.create.side_effect = [
+            first_response,
+            second_response,
+            mock_api_response_end_turn,
+            mock_api_response_end_turn,
+        ]
+
+        await asyncio.gather(
+            analyst.analyze_async("query one"),
+            analyst.analyze_async("query two"),
+        )
+
+        # Group tool results by originating user prompt to verify per-call isolation.
+        calls = analyst.async_client.messages.create.call_args_list
+        results_by_query: dict[str, list[dict]] = {"query one": [], "query two": []}
+
+        for call in calls:
+            kwargs = call.kwargs
+            messages = kwargs.get("messages", [])
+            if len(messages) <= 1:
+                # Initial call with only the user message; no tool result yet.
+                continue
+
+            # The first message in the conversation should be the original user prompt.
+            first_message_content = messages[0]["content"][0]["text"]
+            if first_message_content not in results_by_query:
+                # Ignore any messages that are not part of the two concurrent queries.
+                continue
+
+            tool_result_content = messages[-1]["content"][0]["content"]
+            tool_result = json.loads(tool_result_content)
+            results_by_query[first_message_content].append(tool_result)
+
+        # Each concurrent call should independently see an empty dataset list.
+        for query, tool_results in results_by_query.items():
+            assert tool_results, f"No tool results captured for {query}"
+            for tool_result in tool_results:
+                assert tool_result["count"] == 0
+                # If the tool returns an explicit list of datasets, it should be empty.
+                if "datasets" in tool_result:
+                    assert isinstance(tool_result["datasets"], list)
+                    assert not tool_result["datasets"]
+
+        # Demonstrate that parsed tool results for each query are independent objects.
+        if (
+            results_by_query["query one"]
+            and results_by_query["query two"]
+            and "datasets" in results_by_query["query one"][0]
+            and "datasets" in results_by_query["query two"][0]
+        ):
+            results_by_query["query one"][0]["datasets"].append("dummy-dataset")
+            assert results_by_query["query two"][0]["datasets"] == []
 class TestCreateAnalyst:
     """Tests for create_analyst factory function."""
 
     def test_create_analyst_returns_instance(self, mock_settings):
         """Should return StandaloneAnalyst instance."""
-        with patch("analyst.Anthropic"):
+        with patch("analyst.Anthropic"), patch("analyst.AsyncAnthropic"):
             from analyst import StandaloneAnalyst, create_analyst
 
             analyst = create_analyst()
@@ -379,7 +461,7 @@ class TestCreateAnalyst:
 
     def test_create_analyst_with_model(self, mock_settings):
         """Should pass model to constructor."""
-        with patch("analyst.Anthropic"):
+        with patch("analyst.Anthropic"), patch("analyst.AsyncAnthropic"):
             from analyst import create_analyst
 
             analyst = create_analyst(model="claude-3-haiku-20240307")
