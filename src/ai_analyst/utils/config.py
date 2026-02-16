@@ -14,7 +14,7 @@ class AuthMethod(str, Enum):
 
 
 class Settings(BaseSettings):
-    anthropic_api_key: str = "sk-dummy-key"
+    anthropic_api_key: str = ""
     # User preference: "pro" for Pro subscription first, "api" for API key first
     auth_preference: str = "pro"
 
