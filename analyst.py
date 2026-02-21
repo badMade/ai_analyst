@@ -309,193 +309,216 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
         self.model = model
         self.context = AnalysisContext()
         self.max_iterations = 15
-    
-    def _execute_tool(self, tool_name: str, tool_input: dict) -> str:
-        """Execute a tool and return result as string."""
-        try:
-            if tool_name == "load_dataset":
-                result = self.context.load_dataset(
-                    tool_input["file_path"],
-                    tool_input.get("name")
-                )
-            
-            elif tool_name == "list_datasets":
-                result = {
-                    "datasets": list(self.context.datasets.keys()),
-                    "count": len(self.context.datasets)
-                }
-            
-            elif tool_name == "preview_data":
-                df = self.context.get_dataset(tool_input["dataset_name"])
-                n_rows = tool_input.get("n_rows", 10)
-                columns = tool_input.get("columns")
-                
-                if columns:
-                    df = df[columns]
-                
-                result = {
-                    "data": df.head(n_rows).to_dict(orient="records"),
-                    "total_rows": len(df),
-                    "columns": df.columns.tolist()
-                }
-            
-            elif tool_name == "describe_statistics":
-                df = self.context.get_dataset(tool_input["dataset_name"])
-                columns = tool_input.get("columns")
-                
-                if columns:
-                    df = df[columns]
-                
-                numeric_df = df.select_dtypes(include=[np.number])
-                stats = []
-                
-                for col in numeric_df.columns:
-                    stats.append({
-                        "column": col,
-                        **compute_descriptive_stats(numeric_df[col])
+        self._tool_dispatch = {
+            "load_dataset": self._load_dataset,
+            "list_datasets": self._list_datasets,
+            "preview_data": self._preview_data,
+            "describe_statistics": self._describe_statistics,
+            "compute_correlation": self._compute_correlation,
+            "detect_outliers": self._detect_outliers,
+            "group_analysis": self._group_analysis,
+            "check_data_quality": self._check_data_quality,
+            "test_normality": self._test_normality,
+            "analyze_trend": self._analyze_trend,
+        }
+
+    def _load_dataset(self, tool_input: dict) -> dict:
+        "Load a dataset."
+        return self.context.load_dataset(
+            tool_input["file_path"],
+            tool_input.get("name")
+        )
+
+    def _list_datasets(self, tool_input: dict) -> dict:
+        "List loaded datasets."
+        return {
+            "datasets": list(self.context.datasets.keys()),
+            "count": len(self.context.datasets)
+        }
+
+    def _preview_data(self, tool_input: dict) -> dict:
+        "Preview data from a dataset."
+        df = self.context.get_dataset(tool_input["dataset_name"])
+        n_rows = tool_input.get("n_rows", 10)
+        columns = tool_input.get("columns")
+
+        if columns:
+            df = df[columns]
+
+        return {
+            "data": df.head(n_rows).to_dict(orient="records"),
+            "total_rows": len(df),
+            "columns": df.columns.tolist()
+        }
+
+    def _describe_statistics(self, tool_input: dict) -> dict:
+        "Compute descriptive statistics."
+        df = self.context.get_dataset(tool_input["dataset_name"])
+        columns = tool_input.get("columns")
+
+        if columns:
+            df = df[columns]
+
+        numeric_df = df.select_dtypes(include=[np.number])
+        stats = []
+
+        for col in numeric_df.columns:
+            stats.append({
+                "column": col,
+                **compute_descriptive_stats(numeric_df[col])
+            })
+
+        return {"statistics": stats}
+
+    def _compute_correlation(self, tool_input: dict) -> dict:
+        "Compute correlation matrix."
+        df = self.context.get_dataset(tool_input["dataset_name"])
+        columns = tool_input.get("columns")
+        method = tool_input.get("method", "pearson")
+
+        if columns:
+            df = df[columns]
+
+        numeric_df = df.select_dtypes(include=[np.number])
+        corr_matrix = numeric_df.corr(method=method)
+
+        correlations = []
+        cols = corr_matrix.columns.tolist()
+        for i, col_a in enumerate(cols):
+            for col_b in cols[i+1:]:
+                corr = corr_matrix.loc[col_a, col_b]
+                if pd.notna(corr):
+                    correlations.append({
+                        "column_a": col_a,
+                        "column_b": col_b,
+                        "correlation": round(corr, 4)
                     })
-                
-                result = {"statistics": stats}
-            
-            elif tool_name == "compute_correlation":
-                df = self.context.get_dataset(tool_input["dataset_name"])
-                columns = tool_input.get("columns")
-                method = tool_input.get("method", "pearson")
-                
-                if columns:
-                    df = df[columns]
-                
-                numeric_df = df.select_dtypes(include=[np.number])
-                corr_matrix = numeric_df.corr(method=method)
-                
-                correlations = []
-                cols = corr_matrix.columns.tolist()
-                for i, col_a in enumerate(cols):
-                    for col_b in cols[i+1:]:
-                        corr = corr_matrix.loc[col_a, col_b]
-                        if pd.notna(corr):
-                            correlations.append({
-                                "column_a": col_a,
-                                "column_b": col_b,
-                                "correlation": round(corr, 4)
-                            })
-                
-                correlations.sort(key=lambda x: abs(x["correlation"]), reverse=True)
-                result = {"correlations": correlations, "method": method}
-            
-            elif tool_name == "detect_outliers":
-                df = self.context.get_dataset(tool_input["dataset_name"])
-                column = tool_input["column"]
-                method = tool_input.get("method", "iqr")
-                threshold = tool_input.get("threshold", 1.5 if method == "iqr" else 3)
-                
-                series = df[column].dropna()
-                
-                if method == "iqr":
-                    q1, q3 = series.quantile([0.25, 0.75])
-                    iqr = q3 - q1
-                    lower = q1 - threshold * iqr
-                    upper = q3 + threshold * iqr
-                    outliers = series[(series < lower) | (series > upper)]
-                else:
-                    mean, std = series.mean(), series.std()
-                    z_scores = np.abs((series - mean) / std)
-                    outliers = series[z_scores > threshold]
-                    lower = mean - threshold * std
-                    upper = mean + threshold * std
-                
-                result = {
-                    "method": method,
-                    "threshold": threshold,
-                    "lower_bound": round(lower, 4),
-                    "upper_bound": round(upper, 4),
-                    "outlier_count": len(outliers),
-                    "outlier_percentage": round(len(outliers) / len(series) * 100, 2),
-                    "total_analyzed": len(series)
-                }
-            
-            elif tool_name == "group_analysis":
-                df = self.context.get_dataset(tool_input["dataset_name"])
-                group_by = tool_input["group_by"]
-                agg_column = tool_input["agg_column"]
-                agg_functions = tool_input.get("agg_functions", ["count", "mean", "sum", "min", "max"])
-                
-                grouped = df.groupby(group_by)[agg_column].agg(agg_functions)
-                
-                result = {
-                    "group_by": group_by,
-                    "agg_column": agg_column,
-                    "n_groups": len(grouped),
-                    "results": grouped.reset_index().to_dict(orient="records")
-                }
-            
-            elif tool_name == "check_data_quality":
-                df = self.context.get_dataset(tool_input["dataset_name"])
 
-                total_rows = len(df)
-                total_cells = df.size
-                # Calculate null counts for all columns at once to avoid re-scanning in the loop
-                null_counts = df.isna().sum()
-                null_cells = null_counts.sum()
-                duplicate_rows = df.duplicated().sum()
+        correlations.sort(key=lambda x: abs(x["correlation"]), reverse=True)
+        return {"correlations": correlations, "method": method}
 
-                column_issues = {}
-                # Vectorized calculation of null percentages using precomputed null_counts
-                null_pcts = (null_counts / total_rows) * 100
+    def _detect_outliers(self, tool_input: dict) -> dict:
+        "Detect outliers in a column."
+        df = self.context.get_dataset(tool_input["dataset_name"])
+        column = tool_input["column"]
+        method = tool_input.get("method", "iqr")
+        threshold = tool_input.get("threshold", 1.5 if method == "iqr" else 3)
 
-                # Filter only columns with nulls
-                cols_with_nulls = null_pcts[null_pcts > 0]
+        series = df[column].dropna()
 
-                for col, pct in cols_with_nulls.items():
-                    column_issues[col] = [f"Missing: {pct:.1f}%"]
+        if method == "iqr":
+            q1, q3 = series.quantile([0.25, 0.75])
+            iqr = q3 - q1
+            lower = q1 - threshold * iqr
+            upper = q3 + threshold * iqr
+            outliers = series[(series < lower) | (series > upper)]
+        else:
+            mean, std = series.mean(), series.std()
+            z_scores = np.abs((series - mean) / std)
+            outliers = series[z_scores > threshold]
+            lower = mean - threshold * std
+            upper = mean + threshold * std
 
-                null_percentage = (null_cells / total_cells) * 100 if total_cells else 0.0
-                duplicate_percentage = (
-                    (duplicate_rows / total_rows) * 100 if total_rows else 0.0
-                )
-                quality_score = 100 - (null_percentage * 0.5 + duplicate_percentage * 0.5)
+        return {
+            "method": method,
+            "threshold": threshold,
+            "lower_bound": round(lower, 4),
+            "upper_bound": round(upper, 4),
+            "outlier_count": len(outliers),
+            "outlier_percentage": round(len(outliers) / len(series) * 100, 2),
+            "total_analyzed": len(series)
+        }
 
-                result = {
-                    "total_rows": total_rows,
-                    "total_columns": len(df.columns),
-                    "null_cells": int(null_cells),
-                    "null_percentage": round(null_percentage, 2),
-                    "duplicate_rows": int(duplicate_rows),
-                    "duplicate_percentage": round(duplicate_percentage, 2),
-                    "column_issues": column_issues,
-                    "quality_score": round(quality_score, 2)
-                }
+    def _group_analysis(self, tool_input: dict) -> dict:
+        "Perform group-by analysis."
+        df = self.context.get_dataset(tool_input["dataset_name"])
+        group_by = tool_input["group_by"]
+        agg_column = tool_input["agg_column"]
+        agg_functions = tool_input.get("agg_functions", ["count", "mean", "sum", "min", "max"])
+
+        grouped = df.groupby(group_by)[agg_column].agg(agg_functions)
+
+        return {
+            "group_by": group_by,
+            "agg_column": agg_column,
+            "n_groups": len(grouped),
+            "results": grouped.reset_index().to_dict(orient="records")
+        }
+
+    def _check_data_quality(self, tool_input: dict) -> dict:
+        "Check data quality."
+        df = self.context.get_dataset(tool_input["dataset_name"])
+
+        total_rows = len(df)
+        total_cells = df.size
+        # Calculate null counts for all columns at once to avoid re-scanning in the loop
+        null_counts = df.isna().sum()
+        null_cells = null_counts.sum()
+        duplicate_rows = df.duplicated().sum()
+
+        column_issues = {}
+        # Vectorized calculation of null percentages using precomputed null_counts
+        null_pcts = (null_counts / total_rows) * 100
+
+        # Filter only columns with nulls
+        cols_with_nulls = null_pcts[null_pcts > 0]
+
+        for col, pct in cols_with_nulls.items():
+            column_issues[col] = [f"Missing: {pct:.1f}%"]
+
+        null_percentage = (null_cells / total_cells) * 100 if total_cells else 0.0
+        duplicate_percentage = (
+            (duplicate_rows / total_rows) * 100 if total_rows else 0.0
+        )
+        quality_score = 100 - (null_percentage * 0.5 + duplicate_percentage * 0.5)
+
+        return {
+            "total_rows": total_rows,
+            "total_columns": len(df.columns),
+            "null_cells": int(null_cells),
+            "null_percentage": round(null_percentage, 2),
+            "duplicate_rows": int(duplicate_rows),
+            "duplicate_percentage": round(duplicate_percentage, 2),
+            "column_issues": column_issues,
+            "quality_score": round(quality_score, 2)
+        }
+
+    def _test_normality(self, tool_input: dict) -> dict:
+        "Test for normality."
+        df = self.context.get_dataset(tool_input["dataset_name"])
+        column = tool_input["column"]
+
+        test_result = test_normality(df[column].dropna())
+        return {
+            "column": column,
+            "test": test_result.test_name,
+            "statistic": round(test_result.statistic, 4) if not np.isnan(test_result.statistic) else None,
+            "p_value": round(test_result.p_value, 4) if not np.isnan(test_result.p_value) else None,
+            "is_normal": not test_result.significant,
+            "interpretation": test_result.interpretation
+        }
+
+    def _analyze_trend(self, tool_input: dict) -> dict:
+        "Analyze trend."
+        df = self.context.get_dataset(tool_input["dataset_name"])
+        column = tool_input["column"]
+
+        return detect_trend(df[column].dropna().values)
+
+    def _execute_tool(self, tool_name: str, tool_input: dict) -> str:
+        "Execute a tool and return result as string."
+        try:
+            handler = self._tool_dispatch.get(tool_name)
+            if not handler:
+                return json.dumps({"error": f"Unknown tool: {tool_name}"})
             
-            elif tool_name == "test_normality":
-                df = self.context.get_dataset(tool_input["dataset_name"])
-                column = tool_input["column"]
-                
-                test_result = test_normality(df[column].dropna())
-                result = {
-                    "column": column,
-                    "test": test_result.test_name,
-                    "statistic": round(test_result.statistic, 4) if not np.isnan(test_result.statistic) else None,
-                    "p_value": round(test_result.p_value, 4) if not np.isnan(test_result.p_value) else None,
-                    "is_normal": not test_result.significant,
-                    "interpretation": test_result.interpretation
-                }
-            
-            elif tool_name == "analyze_trend":
-                df = self.context.get_dataset(tool_input["dataset_name"])
-                column = tool_input["column"]
-                
-                trend_result = detect_trend(df[column].dropna().values)
-                result = trend_result
-            
-            else:
-                result = {"error": f"Unknown tool: {tool_name}"}
-            
+            result = handler(tool_input)
             return json.dumps(result, indent=2, default=str)
         
         except Exception as e:
             logger.exception(f"Tool execution error: {tool_name}")
             return json.dumps({"error": str(e)})
-    
+
     def analyze(self, query: str, file_path: str | None = None) -> str:
         """
         Run analysis based on user query.
