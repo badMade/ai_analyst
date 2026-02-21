@@ -5,7 +5,9 @@ Tests the Settings class, environment variable handling, and utility functions.
 """
 
 import os
+import subprocess
 from pathlib import Path
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -112,3 +114,55 @@ class TestEnvironmentConfiguration:
         # pydantic-settings uses the empty string from the env var
         # instead of falling back to the default.
         assert settings.anthropic_api_key == ""
+
+
+class TestCheckProSubscriptionAvailable:
+    """Tests for check_pro_subscription_available function."""
+
+    def test_claude_not_installed(self):
+        """Should return False if claude CLI is not installed."""
+        from ai_analyst.utils.config import check_pro_subscription_available
+
+        with patch("shutil.which", return_value=None):
+            assert check_pro_subscription_available() is False
+
+    def test_claude_installed_but_not_authenticated(self):
+        """Should return False if claude CLI is installed but auth-status fails."""
+        from ai_analyst.utils.config import check_pro_subscription_available
+
+        with patch("shutil.which", return_value="/usr/bin/claude"):
+            with patch("subprocess.run") as mock_run:
+                mock_run.side_effect = subprocess.CalledProcessError(1, ["claude", "auth-status"])
+                assert check_pro_subscription_available() is False
+
+                # Verify subprocess was called correctly
+                mock_run.assert_called_once_with(
+                    ["claude", "auth-status"],
+                    check=True,
+                    capture_output=True,
+                    text=True
+                )
+
+    def test_claude_installed_and_authenticated(self):
+        """Should return True if claude CLI is installed and auth-status succeeds."""
+        from ai_analyst.utils.config import check_pro_subscription_available
+
+        with patch("shutil.which", return_value="/usr/bin/claude"):
+            with patch("subprocess.run") as mock_run:
+                mock_run.return_value = Mock(returncode=0, stdout="Authenticated")
+                assert check_pro_subscription_available() is True
+
+                mock_run.assert_called_once_with(
+                    ["claude", "auth-status"],
+                    check=True,
+                    capture_output=True,
+                    text=True
+                )
+
+    def test_claude_file_not_found_error(self):
+        """Should return False if subprocess raises FileNotFoundError despite check."""
+        from ai_analyst.utils.config import check_pro_subscription_available
+
+        with patch("shutil.which", return_value="/usr/bin/claude"):
+            with patch("subprocess.run", side_effect=FileNotFoundError):
+                assert check_pro_subscription_available() is False
