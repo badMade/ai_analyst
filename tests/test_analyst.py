@@ -9,6 +9,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 import numpy as np
+import pandas as pd
 
 
 class TestStandaloneAnalystInit:
@@ -16,13 +17,13 @@ class TestStandaloneAnalystInit:
 
     def test_init_creates_client(self, mock_settings):
         """Should create Anthropic client on init."""
-        with patch("anthropic.Anthropic") as mock_client:
+        import analyst
+        with patch("analyst.Anthropic") as mock_client:
             from analyst import StandaloneAnalyst
 
             StandaloneAnalyst()
 
             mock_client.assert_called_once()
-
     def test_init_uses_provided_model(self, mock_settings):
         """Should use the provided model name."""
         with patch("anthropic.Anthropic"):
@@ -234,6 +235,41 @@ class TestExecuteTool:
 
         result_dict = json.loads(result)
         assert "error" in result_dict
+
+    def test_execute_detect_outliers_zscore_constant(self, analyst_with_data):
+        """Should handle constant column (std=0) gracefully."""
+        # Create a dataframe with a constant column
+        df = pd.DataFrame({"constant": [10.0] * 5})
+        analyst_with_data.context.datasets["constant_data"] = df
+
+        result = analyst_with_data._execute_tool("detect_outliers", {
+            "dataset_name": "constant_data",
+            "column": "constant",
+            "method": "zscore",
+            "threshold": 3
+        })
+
+        result_dict = json.loads(result)
+        assert result_dict["method"] == "zscore"
+        assert result_dict["outlier_count"] == 0
+        assert result_dict["outlier_percentage"] == 0.0
+
+    def test_execute_detect_outliers_zscore_single_value(self, analyst_with_data):
+        """Should handle single value column (std=NaN) gracefully."""
+        # Create a dataframe with a single value
+        df = pd.DataFrame({"single": [10.0]})
+        analyst_with_data.context.datasets["single_data"] = df
+
+        result = analyst_with_data._execute_tool("detect_outliers", {
+            "dataset_name": "single_data",
+            "column": "single",
+            "method": "zscore",
+            "threshold": 3
+        })
+
+        result_dict = json.loads(result)
+        assert result_dict["method"] == "zscore"
+        assert result_dict["outlier_count"] == 0
 
 
 class TestAnalyze:
