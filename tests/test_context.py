@@ -4,8 +4,8 @@ Tests for AnalysisContext class.
 Tests dataset loading, retrieval, and error handling for different file formats.
 """
 
-import pytest
 import pandas as pd
+import pytest
 
 
 class TestAnalysisContextInit:
@@ -60,10 +60,11 @@ class TestLoadDataset:
 
         assert result["name"] == "test_data"
 
-    def test_load_file_not_found(self, analysis_context):
+    def test_load_file_not_found(self, analysis_context, tmp_path):
         """Should raise FileNotFoundError for missing files."""
         with pytest.raises(FileNotFoundError, match="File not found"):
-            analysis_context.load_dataset("/nonexistent/path/data.csv")
+            non_existent_file = tmp_path / "nonexistent.csv"
+            analysis_context.load_dataset(str(non_existent_file))
 
     def test_load_unsupported_format(self, analysis_context, tmp_path):
         """Should raise ValueError for unsupported file formats."""

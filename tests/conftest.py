@@ -4,8 +4,8 @@ Shared test fixtures for AI Analyst tests.
 
 from unittest.mock import MagicMock, patch
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 import pytest
 
 
@@ -96,7 +96,7 @@ def sample_parquet_file(tmp_path, sample_dataframe):
 @pytest.fixture
 def mock_anthropic_client():
     """Create a mock Anthropic client for testing without API calls."""
-    with patch("anthropic.Anthropic") as mock_client_class:
+    with patch("analyst.Anthropic") as mock_client_class:
         mock_client = MagicMock()
         mock_client_class.return_value = mock_client
         yield mock_client
