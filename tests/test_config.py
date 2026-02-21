@@ -5,11 +5,13 @@ Tests the Settings class, environment variable handling, and utility functions.
 """
 
 import os
+import subprocess
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from ai_analyst.utils.config import sanitize_path
+from ai_analyst.utils.config import check_pro_subscription_available, sanitize_path
 
 class TestSettings:
     """Tests for Settings class."""
@@ -112,3 +114,52 @@ class TestEnvironmentConfiguration:
         # pydantic-settings uses the empty string from the env var
         # instead of falling back to the default.
         assert settings.anthropic_api_key == ""
+
+
+class TestCheckProSubscription:
+    """Tests for check_pro_subscription_available."""
+
+    @patch("ai_analyst.utils.config.shutil.which")
+    def test_claude_cli_not_installed(self, mock_which):
+        """Should return False if claude CLI is not installed."""
+        mock_which.return_value = None
+        assert check_pro_subscription_available() is False
+
+    @patch("ai_analyst.utils.config.subprocess.run")
+    @patch("ai_analyst.utils.config.shutil.which")
+    def test_claude_cli_installed_not_authenticated(self, mock_which, mock_run):
+        """Should return False if auth-status fails."""
+        mock_which.return_value = "/usr/bin/claude"
+        mock_run.return_value = MagicMock(returncode=1)
+
+        assert check_pro_subscription_available() is False
+        mock_run.assert_called_once_with(
+            ["claude", "auth-status"],
+            check=False,
+            capture_output=True,
+            text=True
+        )
+
+    @patch("ai_analyst.utils.config.subprocess.run")
+    @patch("ai_analyst.utils.config.shutil.which")
+    def test_claude_cli_installed_authenticated(self, mock_which, mock_run):
+        """Should return True if auth-status succeeds."""
+        mock_which.return_value = "/usr/bin/claude"
+        mock_run.return_value = MagicMock(returncode=0)
+
+        assert check_pro_subscription_available() is True
+        mock_run.assert_called_once_with(
+            ["claude", "auth-status"],
+            check=False,
+            capture_output=True,
+            text=True
+        )
+
+    @patch("ai_analyst.utils.config.subprocess.run")
+    @patch("ai_analyst.utils.config.shutil.which")
+    def test_claude_cli_error(self, mock_which, mock_run):
+        """Should return False if subprocess raises an error."""
+        mock_which.return_value = "/usr/bin/claude"
+        mock_run.side_effect = subprocess.SubprocessError("Command failed")
+
+        assert check_pro_subscription_available() is False
