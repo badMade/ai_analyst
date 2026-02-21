@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+import shutil
 import subprocess
 from enum import Enum
 from pathlib import Path
@@ -29,20 +30,19 @@ def check_pro_subscription_available() -> bool:
     This checks if the user has authenticated via `claude login` command
     which stores OAuth credentials locally.
     """
-    # Check for Claude CLI config directory with stored credentials
-    claude_config_dir = os.environ.get("CLAUDE_CONFIG_DIR")
-    claude_config_paths = [
-        Path.home() / ".claude" / "credentials.json",
-        Path.home() / ".config" / "claude" / "credentials.json",
-    ]
-    if claude_config_dir:
-        claude_config_paths.append(Path(claude_config_dir) / "credentials.json")
+    if not shutil.which("claude"):
+        return False
 
-    for config_path in claude_config_paths:
-        if config_path.exists():
-            return True
-
-    return False
+    try:
+        subprocess.run(
+            ["claude", "auth-status"],
+            check=True,
+            capture_output=True,
+            text=True
+        )
+        return True
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return False
 
 
 def get_auth_method() -> tuple[AuthMethod, str | None]:
