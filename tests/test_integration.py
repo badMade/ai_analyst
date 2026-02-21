@@ -5,10 +5,11 @@ End-to-end tests that verify the complete workflow.
 """
 
 import json
-import pytest
-from unittest.mock import MagicMock, patch
 from pathlib import Path
+from unittest.mock import MagicMock, patch
+
 import pandas as pd
+import pytest
 
 
 class TestEndToEndAnalysis:
@@ -57,20 +58,18 @@ class TestEndToEndAnalysis:
         analyst = analyst_with_mock_api
 
         # Load dataset
-        load_result = analyst._execute_tool("load_dataset", {
-            "file_path": sample_sales_file,
-            "name": "sales"
-        })
+        load_result = analyst._execute_tool(
+            "load_dataset", {"file_path": sample_sales_file, "name": "sales"}
+        )
         load_data = json.loads(load_result)
 
         assert load_data["name"] == "sales"
         assert load_data["rows"] == 30
 
         # Preview data
-        preview_result = analyst._execute_tool("preview_data", {
-            "dataset_name": "sales",
-            "n_rows": 5
-        })
+        preview_result = analyst._execute_tool(
+            "preview_data", {"dataset_name": "sales", "n_rows": 5}
+        )
         preview_data = json.loads(preview_result)
 
         assert len(preview_data["data"]) == 5
@@ -81,15 +80,10 @@ class TestEndToEndAnalysis:
         analyst = analyst_with_mock_api
 
         # Load
-        analyst._execute_tool("load_dataset", {
-            "file_path": sample_sales_file,
-            "name": "sales"
-        })
+        analyst._execute_tool("load_dataset", {"file_path": sample_sales_file, "name": "sales"})
 
         # Describe statistics
-        stats_result = analyst._execute_tool("describe_statistics", {
-            "dataset_name": "sales"
-        })
+        stats_result = analyst._execute_tool("describe_statistics", {"dataset_name": "sales"})
         stats_data = json.loads(stats_result)
 
         assert "statistics" in stats_data
@@ -104,16 +98,12 @@ class TestEndToEndAnalysis:
         analyst = analyst_with_mock_api
 
         # Load
-        analyst._execute_tool("load_dataset", {
-            "file_path": sample_sales_file,
-            "name": "sales"
-        })
+        analyst._execute_tool("load_dataset", {"file_path": sample_sales_file, "name": "sales"})
 
         # Compute correlations
-        corr_result = analyst._execute_tool("compute_correlation", {
-            "dataset_name": "sales",
-            "method": "pearson"
-        })
+        corr_result = analyst._execute_tool(
+            "compute_correlation", {"dataset_name": "sales", "method": "pearson"}
+        )
         corr_data = json.loads(corr_result)
 
         assert "correlations" in corr_data
@@ -124,15 +114,10 @@ class TestEndToEndAnalysis:
         analyst = analyst_with_mock_api
 
         # Load
-        analyst._execute_tool("load_dataset", {
-            "file_path": sample_sales_file,
-            "name": "sales"
-        })
+        analyst._execute_tool("load_dataset", {"file_path": sample_sales_file, "name": "sales"})
 
         # Check quality
-        quality_result = analyst._execute_tool("check_data_quality", {
-            "dataset_name": "sales"
-        })
+        quality_result = analyst._execute_tool("check_data_quality", {"dataset_name": "sales"})
         quality_data = json.loads(quality_result)
 
         assert quality_data["total_rows"] == 30
@@ -144,17 +129,13 @@ class TestEndToEndAnalysis:
         analyst = analyst_with_mock_api
 
         # Load
-        analyst._execute_tool("load_dataset", {
-            "file_path": sample_sales_file,
-            "name": "sales"
-        })
+        analyst._execute_tool("load_dataset", {"file_path": sample_sales_file, "name": "sales"})
 
         # Group analysis
-        group_result = analyst._execute_tool("group_analysis", {
-            "dataset_name": "sales",
-            "group_by": "category",
-            "agg_column": "revenue"
-        })
+        group_result = analyst._execute_tool(
+            "group_analysis",
+            {"dataset_name": "sales", "group_by": "category", "agg_column": "revenue"},
+        )
         group_data = json.loads(group_result)
 
         assert group_data["group_by"] == "category"
@@ -166,17 +147,12 @@ class TestEndToEndAnalysis:
         analyst = analyst_with_mock_api
 
         # Load
-        analyst._execute_tool("load_dataset", {
-            "file_path": sample_sales_file,
-            "name": "sales"
-        })
+        analyst._execute_tool("load_dataset", {"file_path": sample_sales_file, "name": "sales"})
 
         # Detect outliers
-        outlier_result = analyst._execute_tool("detect_outliers", {
-            "dataset_name": "sales",
-            "column": "revenue",
-            "method": "iqr"
-        })
+        outlier_result = analyst._execute_tool(
+            "detect_outliers", {"dataset_name": "sales", "column": "revenue", "method": "iqr"}
+        )
         outlier_data = json.loads(outlier_result)
 
         assert "outlier_count" in outlier_data
@@ -188,16 +164,12 @@ class TestEndToEndAnalysis:
         analyst = analyst_with_mock_api
 
         # Load
-        analyst._execute_tool("load_dataset", {
-            "file_path": sample_sales_file,
-            "name": "sales"
-        })
+        analyst._execute_tool("load_dataset", {"file_path": sample_sales_file, "name": "sales"})
 
         # Analyze trend
-        trend_result = analyst._execute_tool("analyze_trend", {
-            "dataset_name": "sales",
-            "column": "revenue"
-        })
+        trend_result = analyst._execute_tool(
+            "analyze_trend", {"dataset_name": "sales", "column": "revenue"}
+        )
         trend_data = json.loads(trend_result)
 
         assert "trend" in trend_data
@@ -227,14 +199,8 @@ class TestMultipleDatasets:
         df2.to_csv(file2, index=False)
 
         # Load both
-        analyst._execute_tool("load_dataset", {
-            "file_path": str(file1),
-            "name": "first"
-        })
-        analyst._execute_tool("load_dataset", {
-            "file_path": str(file2),
-            "name": "second"
-        })
+        analyst._execute_tool("load_dataset", {"file_path": str(file1), "name": "first"})
+        analyst._execute_tool("load_dataset", {"file_path": str(file2), "name": "second"})
 
         # List datasets
         list_result = analyst._execute_tool("list_datasets", {})
@@ -259,14 +225,10 @@ class TestMultipleDatasets:
         analyst._execute_tool("load_dataset", {"file_path": str(file2), "name": "small"})
 
         # Analyze first
-        stats1 = json.loads(analyst._execute_tool("describe_statistics", {
-            "dataset_name": "big"
-        }))
+        stats1 = json.loads(analyst._execute_tool("describe_statistics", {"dataset_name": "big"}))
 
         # Analyze second
-        stats2 = json.loads(analyst._execute_tool("describe_statistics", {
-            "dataset_name": "small"
-        }))
+        stats2 = json.loads(analyst._execute_tool("describe_statistics", {"dataset_name": "small"}))
 
         # Values should be different
         mean1 = stats1["statistics"][0]["mean"]
@@ -287,9 +249,7 @@ class TestErrorHandling:
 
     def test_error_on_missing_dataset(self, analyst):
         """Should return error for operations on missing dataset."""
-        result = analyst._execute_tool("preview_data", {
-            "dataset_name": "nonexistent"
-        })
+        result = analyst._execute_tool("preview_data", {"dataset_name": "nonexistent"})
         data = json.loads(result)
 
         assert "error" in data
@@ -302,10 +262,9 @@ class TestErrorHandling:
 
         analyst._execute_tool("load_dataset", {"file_path": str(file), "name": "test"})
 
-        result = analyst._execute_tool("detect_outliers", {
-            "dataset_name": "test",
-            "column": "nonexistent_column"
-        })
+        result = analyst._execute_tool(
+            "detect_outliers", {"dataset_name": "test", "column": "nonexistent_column"}
+        )
         data = json.loads(result)
 
         assert "error" in data
@@ -315,9 +274,7 @@ class TestErrorHandling:
         file = tmp_path / "data.xyz"
         file.write_text("some data")
 
-        result = analyst._execute_tool("load_dataset", {
-            "file_path": str(file)
-        })
+        result = analyst._execute_tool("load_dataset", {"file_path": str(file)})
         data = json.loads(result)
 
         assert "error" in data
@@ -336,18 +293,13 @@ class TestDataWithNulls:
 
     def test_quality_check_detects_nulls(self, analyst, tmp_path):
         """Quality check should detect null values."""
-        df = pd.DataFrame({
-            "a": [1, None, 3, None, 5],
-            "b": [1, 2, 3, 4, 5]
-        })
+        df = pd.DataFrame({"a": [1, None, 3, None, 5], "b": [1, 2, 3, 4, 5]})
         file = tmp_path / "nulls.csv"
         df.to_csv(file, index=False)
 
         analyst._execute_tool("load_dataset", {"file_path": str(file), "name": "nulls"})
 
-        result = analyst._execute_tool("check_data_quality", {
-            "dataset_name": "nulls"
-        })
+        result = analyst._execute_tool("check_data_quality", {"dataset_name": "nulls"})
         data = json.loads(result)
 
         assert data["null_cells"] > 0
@@ -355,17 +307,13 @@ class TestDataWithNulls:
 
     def test_statistics_handle_nulls(self, analyst, tmp_path):
         """Statistics should handle null values gracefully."""
-        df = pd.DataFrame({
-            "value": [1, 2, None, 4, 5]
-        })
+        df = pd.DataFrame({"value": [1, 2, None, 4, 5]})
         file = tmp_path / "data.csv"
         df.to_csv(file, index=False)
 
         analyst._execute_tool("load_dataset", {"file_path": str(file), "name": "data"})
 
-        result = analyst._execute_tool("describe_statistics", {
-            "dataset_name": "data"
-        })
+        result = analyst._execute_tool("describe_statistics", {"dataset_name": "data"})
         data = json.loads(result)
 
         # Should compute stats ignoring nulls
@@ -387,18 +335,13 @@ class TestDuplicateDetection:
 
     def test_quality_check_detects_duplicates(self, analyst, tmp_path):
         """Quality check should detect duplicate rows."""
-        df = pd.DataFrame({
-            "a": [1, 2, 2, 3, 3],
-            "b": ["x", "y", "y", "z", "z"]
-        })
+        df = pd.DataFrame({"a": [1, 2, 2, 3, 3], "b": ["x", "y", "y", "z", "z"]})
         file = tmp_path / "dups.csv"
         df.to_csv(file, index=False)
 
         analyst._execute_tool("load_dataset", {"file_path": str(file), "name": "dups"})
 
-        result = analyst._execute_tool("check_data_quality", {
-            "dataset_name": "dups"
-        })
+        result = analyst._execute_tool("check_data_quality", {"dataset_name": "dups"})
         data = json.loads(result)
 
         assert data["duplicate_rows"] == 2

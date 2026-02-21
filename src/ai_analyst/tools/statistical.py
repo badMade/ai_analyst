@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import namedtuple
-from typing import Sequence
+from collections.abc import Sequence
 
 import pandas as pd
 from scipy import stats
@@ -15,14 +15,14 @@ TestResult = namedtuple(
 def compute_descriptive_stats(series: pd.Series) -> dict[str, float]:
     desc = series.describe()
     return {
-        "count": desc['count'],
-        "mean": desc['mean'],
-        "std": desc['std'],
-        "min": desc['min'],
-        "25%": desc['25%'],
-        "50%": desc['50%'],
-        "75%": desc['75%'],
-        "max": desc['max'],
+        "count": desc["count"],
+        "mean": desc["mean"],
+        "std": desc["std"],
+        "min": desc["min"],
+        "25%": desc["25%"],
+        "50%": desc["50%"],
+        "75%": desc["75%"],
+        "max": desc["max"],
     }
 
 

@@ -1,14 +1,14 @@
 import logging
 import os
-import re
-import subprocess
 from enum import Enum
 from pathlib import Path
+
 from pydantic_settings import BaseSettings
 
 
 class AuthMethod(str, Enum):
     """Authentication method for Claude API."""
+
     PRO_SUBSCRIPTION = "pro_subscription"  # Claude Pro/Max subscription via OAuth
     API_KEY = "api_key"  # Direct API key
 
@@ -97,15 +97,17 @@ def sanitize_path(path: str | Path) -> Path:
     """
     if os.name != "nt":
         path_str = str(path)
-        if len(path_str) > 2 and path_str[1] == ":" and path_str[0].isalpha() and path_str[2] in ("\\", "/"):
+        if (
+            len(path_str) > 2
+            and path_str[1] == ":"
+            and path_str[0].isalpha()
+            and path_str[2] in ("\\", "/")
+        ):
             logging.error(
                 "Refusing Windows-style path on non-Windows system: %s",
                 path_str,
             )
-            raise ValueError(
-                "Invalid Windows-style path on non-Windows system: "
-                f"{path_str}"
-            )
+            raise ValueError(f"Invalid Windows-style path on non-Windows system: {path_str}")
 
     raw_path: Path = Path(path).expanduser()
 
@@ -120,16 +122,11 @@ def sanitize_path(path: str | Path) -> Path:
             candidate,
             BASE_DATA_DIR,
         )
-        raise ValueError(
-            f"Invalid path outside of allowed base directory: {candidate}"
-        )
+        raise ValueError(f"Invalid path outside of allowed base directory: {candidate}")
 
     return candidate
 
 
 def setup_logging(level: int = logging.INFO) -> None:
     """Configure logging for the application."""
-    logging.basicConfig(
-        level=level,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    )
+    logging.basicConfig(level=level, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")

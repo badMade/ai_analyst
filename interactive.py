@@ -12,8 +12,8 @@ from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.prompt import Prompt
 
+from ai_analyst.utils.config import AuthMethod, get_auth_method, setup_logging
 from analyst import StandaloneAnalyst
-from ai_analyst.utils.config import setup_logging, get_auth_method, AuthMethod
 
 console = Console()
 
@@ -36,48 +36,49 @@ def run_interactive(
         console.print(f"[red]Authentication Error:[/red]\n{e}")
         sys.exit(1)
 
-    console.print(Panel(
-        "[bold cyan]AI Analyst Interactive Mode[/bold cyan]\n\n"
-        f"Authentication: {auth_status}\n\n"
-        "Commands:\n"
-        "  [green]load <file>[/green]  - Load a dataset\n"
-        "  [green]quit/exit[/green]    - Exit session\n"
-        "  [green]clear[/green]        - Clear screen\n"
-        "  [green]help[/green]         - Show this help\n\n"
-        "Or just type your analysis question.",
-        title="Welcome",
-        border_style="blue"
-    ))
+    console.print(
+        Panel(
+            "[bold cyan]AI Analyst Interactive Mode[/bold cyan]\n\n"
+            f"Authentication: {auth_status}\n\n"
+            "Commands:\n"
+            "  [green]load <file>[/green]  - Load a dataset\n"
+            "  [green]quit/exit[/green]    - Exit session\n"
+            "  [green]clear[/green]        - Clear screen\n"
+            "  [green]help[/green]         - Show this help\n\n"
+            "Or just type your analysis question.",
+            title="Welcome",
+            border_style="blue",
+        )
+    )
 
     analyst = StandaloneAnalyst(model=model)
     current_file = file_path
-    
+
     if current_file:
         console.print(f"\n[dim]Working with:[/dim] {current_file}")
-    
+
     while True:
         try:
             user_input = Prompt.ask("\n[bold blue]You[/bold blue]").strip()
-            
+
             if not user_input:
                 continue
-            
+
             # Handle commands
             if user_input.lower() in ["quit", "exit", "q"]:
                 console.print("\n[dim]Goodbye![/dim]")
                 break
-            
+
             if user_input.lower() == "clear":
                 console.clear()
                 continue
-            
+
             if user_input.lower() == "help":
                 console.print(
-                    "Commands: load <file>, quit, clear, help\n"
-                    "Or ask any analysis question."
+                    "Commands: load <file>, quit, clear, help\nOr ask any analysis question."
                 )
                 continue
-            
+
             if user_input.lower().startswith("load "):
                 new_file = user_input[5:].strip()
                 if Path(new_file).exists():
@@ -86,15 +87,15 @@ def run_interactive(
                 else:
                     console.print(f"[red]File not found:[/red] {new_file}")
                 continue
-            
+
             # Run analysis
             console.print("[dim]Analyzing...[/dim]")
-            
+
             response = analyst.analyze(user_input, current_file)
-            
+
             console.print("\n[bold green]Analyst[/bold green]")
             console.print(Markdown(response))
-        
+
         except KeyboardInterrupt:
             console.print("\n[dim]Use 'quit' to exit[/dim]")
         except Exception as e:
@@ -103,5 +104,6 @@ def run_interactive(
 
 if __name__ == "__main__":
     import sys
+
     file_arg = sys.argv[1] if len(sys.argv) > 1 else None
     run_interactive(file_arg)
