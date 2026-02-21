@@ -207,7 +207,7 @@ If no code changes are needed, set "changes" to an empty array and provide your 
 
     user_message = f"""Repository: {repo.full_name}
 Issue/PR: {issue_or_pr.title}
-Description: {issue_or_pr.body or 'No description'}
+Description: {issue_or_pr.body or "No description"}
 
 Files in repository:
 {chr(10).join(files)}
@@ -255,8 +255,12 @@ Analyze the request and provide changes if needed."""
                 else:
                     target_path = os.path.abspath(os.path.join(workspace_root, file_spec))
 
-                if not (target_path == workspace_root or target_path.startswith(workspace_root + os.sep)):
-                    print(f"Skipping unsafe file operation outside workspace: {file_spec} -> {target_path}")
+                if not (
+                    target_path == workspace_root or target_path.startswith(workspace_root + os.sep)
+                ):
+                    print(
+                        f"Skipping unsafe file operation outside workspace: {file_spec} -> {target_path}"
+                    )
                     continue
 
                 if change["action"] in ["modify", "create"]:

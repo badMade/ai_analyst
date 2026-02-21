@@ -4,9 +4,9 @@ Tests for statistical analysis functions.
 Tests the statistical helper functions used by the analyst.
 """
 
-import pytest
-import pandas as pd
 import numpy as np
+import pandas as pd
+import pytest
 
 
 class TestComputeDescriptiveStats:
@@ -69,7 +69,7 @@ class TestTestNormality:
 
     def test_returns_test_result(self):
         """Should return a TestResult namedtuple."""
-        from ai_analyst.tools.statistical import test_normality, TestResult
+        from ai_analyst.tools.statistical import test_normality
 
         series = pd.Series(np.random.randn(100))
         result = test_normality(series)
@@ -180,7 +180,7 @@ class TestTestResultNamedTuple:
             statistic=0.95,
             p_value=0.05,
             significant=True,
-            interpretation="Significant"
+            interpretation="Significant",
         )
 
         assert result.test_name == "Test"
