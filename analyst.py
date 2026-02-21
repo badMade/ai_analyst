@@ -8,21 +8,17 @@ Uses Claude API directly with tool definitions for a simpler standalone setup.
 import asyncio
 import json
 import logging
-from typing import Any
 
 import pandas as pd
 import numpy as np
 from anthropic import Anthropic
-from pydantic import BaseModel
 
 from ai_analyst.tools.statistical import (
     compute_descriptive_stats,
     test_normality,
-    test_correlation_significance,
     detect_trend,
 )
 from ai_analyst.utils.config import (
-    get_settings,
     sanitize_path,
     get_auth_method,
     AuthMethod,
