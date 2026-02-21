@@ -8,24 +8,20 @@ Uses Claude API directly with tool definitions for a simpler standalone setup.
 import asyncio
 import json
 import logging
-from typing import Any
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 from anthropic import Anthropic
-from pydantic import BaseModel
 
 from ai_analyst.tools.statistical import (
     compute_descriptive_stats,
-    test_normality,
-    test_correlation_significance,
     detect_trend,
+    test_normality,
 )
 from ai_analyst.utils.config import (
-    get_settings,
-    sanitize_path,
-    get_auth_method,
     AuthMethod,
+    get_auth_method,
+    sanitize_path,
 )
 
 logger = logging.getLogger(__name__)
@@ -33,20 +29,20 @@ logger = logging.getLogger(__name__)
 
 class AnalysisContext:
     """Holds loaded datasets and analysis state."""
-    
+
     def __init__(self):
         self.datasets: dict[str, pd.DataFrame] = {}
         self.results: list[dict] = []
-    
+
     def load_dataset(self, file_path: str, name: str | None = None) -> dict:
         """Load dataset from file."""
         path = sanitize_path(file_path)
-        
+
         if not path.exists():
             raise FileNotFoundError(f"File not found: {path}")
-        
+
         suffix = path.suffix.lower()
-        
+
         if suffix == ".csv":
             df = pd.read_csv(path)
         elif suffix == ".json":
@@ -57,10 +53,10 @@ class AnalysisContext:
             df = pd.read_parquet(path)
         else:
             raise ValueError(f"Unsupported format: {suffix}")
-        
+
         dataset_name = name or path.stem
         self.datasets[dataset_name] = df
-        
+
         return {
             "name": dataset_name,
             "rows": len(df),
@@ -69,7 +65,7 @@ class AnalysisContext:
             "dtypes": {col: str(dtype) for col, dtype in df.dtypes.items()},
             "null_counts": df.isna().sum().to_dict()
         }
-    
+
     def get_dataset(self, name: str) -> pd.DataFrame:
         """Get loaded dataset by name."""
         if name not in self.datasets:
@@ -281,7 +277,7 @@ TOOLS = [
 
 class StandaloneAnalyst:
     """Standalone AI Analyst using direct Claude API calls."""
-    
+
     SYSTEM_PROMPT = """You are an expert data analyst assistant. You have tools to load, inspect, and analyze datasets.
 
 When analyzing data:
@@ -292,7 +288,7 @@ When analyzing data:
 5. Note any limitations or caveats
 
 Be thorough but efficient. Present results in a structured, easy-to-understand format."""
-    
+
     def __init__(self, model: str = "claude-sonnet-4-20250514"):
         # Get authentication method (Pro subscription first, API key as fallback)
         auth_method, api_key = get_auth_method()
@@ -309,7 +305,7 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
         self.model = model
         self.context = AnalysisContext()
         self.max_iterations = 15
-    
+
     def _execute_tool(self, tool_name: str, tool_input: dict) -> str:
         """Execute a tool and return result as string."""
         try:
@@ -318,56 +314,56 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                     tool_input["file_path"],
                     tool_input.get("name")
                 )
-            
+
             elif tool_name == "list_datasets":
                 result = {
                     "datasets": list(self.context.datasets.keys()),
                     "count": len(self.context.datasets)
                 }
-            
+
             elif tool_name == "preview_data":
                 df = self.context.get_dataset(tool_input["dataset_name"])
                 n_rows = tool_input.get("n_rows", 10)
                 columns = tool_input.get("columns")
-                
+
                 if columns:
                     df = df[columns]
-                
+
                 result = {
                     "data": df.head(n_rows).to_dict(orient="records"),
                     "total_rows": len(df),
                     "columns": df.columns.tolist()
                 }
-            
+
             elif tool_name == "describe_statistics":
                 df = self.context.get_dataset(tool_input["dataset_name"])
                 columns = tool_input.get("columns")
-                
+
                 if columns:
                     df = df[columns]
-                
+
                 numeric_df = df.select_dtypes(include=[np.number])
                 stats = []
-                
+
                 for col in numeric_df.columns:
                     stats.append({
                         "column": col,
                         **compute_descriptive_stats(numeric_df[col])
                     })
-                
+
                 result = {"statistics": stats}
-            
+
             elif tool_name == "compute_correlation":
                 df = self.context.get_dataset(tool_input["dataset_name"])
                 columns = tool_input.get("columns")
                 method = tool_input.get("method", "pearson")
-                
+
                 if columns:
                     df = df[columns]
-                
+
                 numeric_df = df.select_dtypes(include=[np.number])
                 corr_matrix = numeric_df.corr(method=method)
-                
+
                 correlations = []
                 cols = corr_matrix.columns.tolist()
                 for i, col_a in enumerate(cols):
@@ -379,18 +375,18 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                                 "column_b": col_b,
                                 "correlation": round(corr, 4)
                             })
-                
+
                 correlations.sort(key=lambda x: abs(x["correlation"]), reverse=True)
                 result = {"correlations": correlations, "method": method}
-            
+
             elif tool_name == "detect_outliers":
                 df = self.context.get_dataset(tool_input["dataset_name"])
                 column = tool_input["column"]
                 method = tool_input.get("method", "iqr")
                 threshold = tool_input.get("threshold", 1.5 if method == "iqr" else 3)
-                
+
                 series = df[column].dropna()
-                
+
                 if method == "iqr":
                     q1, q3 = series.quantile([0.25, 0.75])
                     iqr = q3 - q1
@@ -403,7 +399,7 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                     outliers = series[z_scores > threshold]
                     lower = mean - threshold * std
                     upper = mean + threshold * std
-                
+
                 result = {
                     "method": method,
                     "threshold": threshold,
@@ -413,22 +409,22 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                     "outlier_percentage": round(len(outliers) / len(series) * 100, 2),
                     "total_analyzed": len(series)
                 }
-            
+
             elif tool_name == "group_analysis":
                 df = self.context.get_dataset(tool_input["dataset_name"])
                 group_by = tool_input["group_by"]
                 agg_column = tool_input["agg_column"]
                 agg_functions = tool_input.get("agg_functions", ["count", "mean", "sum", "min", "max"])
-                
+
                 grouped = df.groupby(group_by)[agg_column].agg(agg_functions)
-                
+
                 result = {
                     "group_by": group_by,
                     "agg_column": agg_column,
                     "n_groups": len(grouped),
                     "results": grouped.reset_index().to_dict(orient="records")
                 }
-            
+
             elif tool_name == "check_data_quality":
                 df = self.context.get_dataset(tool_input["dataset_name"])
 
@@ -465,11 +461,11 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                     "column_issues": column_issues,
                     "quality_score": round(quality_score, 2)
                 }
-            
+
             elif tool_name == "test_normality":
                 df = self.context.get_dataset(tool_input["dataset_name"])
                 column = tool_input["column"]
-                
+
                 test_result = test_normality(df[column].dropna())
                 result = {
                     "column": column,
@@ -479,31 +475,43 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                     "is_normal": not test_result.significant,
                     "interpretation": test_result.interpretation
                 }
-            
+
             elif tool_name == "analyze_trend":
                 df = self.context.get_dataset(tool_input["dataset_name"])
                 column = tool_input["column"]
-                
+
                 trend_result = detect_trend(df[column].dropna().values)
                 result = trend_result
-            
+
             else:
                 result = {"error": f"Unknown tool: {tool_name}"}
-            
+
             return json.dumps(result, indent=2, default=str)
-        
+
+        except KeyError as e:
+            logger.warning(f"Key error in tool {tool_name}: {e}")
+            return json.dumps({"error": f"Missing column or key: {str(e)}"})
+
+        except ValueError as e:
+            logger.warning(f"Value error in tool {tool_name}: {e}")
+            return json.dumps({"error": f"Invalid value: {str(e)}"})
+
+        except FileNotFoundError as e:
+            logger.warning(f"File not found in tool {tool_name}: {e}")
+            return json.dumps({"error": str(e)})
+
         except Exception as e:
             logger.exception(f"Tool execution error: {tool_name}")
             return json.dumps({"error": str(e)})
-    
+
     def analyze(self, query: str, file_path: str | None = None) -> str:
         """
         Run analysis based on user query.
-        
+
         Args:
             query: Analysis request
             file_path: Optional file to analyze (will be mentioned in query context)
-        
+
         Returns:
             Final analysis response
         """
@@ -511,13 +519,13 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
         user_content = query
         if file_path:
             user_content = f"Analyze the file at: {file_path}\n\n{query}"
-        
+
         messages = [{"role": "user", "content": user_content}]
-        
+
         # Agentic loop
         for iteration in range(self.max_iterations):
             logger.debug(f"Iteration {iteration + 1}")
-            
+
             response = self.client.messages.create(
                 model=self.model,
                 max_tokens=4096,
@@ -525,7 +533,7 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                 tools=TOOLS,
                 messages=messages
             )
-            
+
             # Check if done
             if response.stop_reason == "end_turn":
                 # Extract text response
@@ -533,7 +541,7 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                     if hasattr(block, "text"):
                         return block.text
                 return ""
-            
+
             # Process tool use
             if response.stop_reason == "tool_use":
                 # Add assistant message
@@ -541,7 +549,7 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                     "role": "assistant",
                     "content": response.content
                 })
-                
+
                 # Execute tools and add results
                 tool_results = []
                 for block in response.content:
@@ -553,15 +561,15 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                             "tool_use_id": block.id,
                             "content": result
                         })
-                
+
                 messages.append({"role": "user", "content": tool_results})
             else:
                 # Unexpected stop reason
                 logger.warning(f"Unexpected stop reason: {response.stop_reason}")
                 break
-        
+
         return "Analysis reached maximum iterations. Please try a more specific query."
-    
+
     async def analyze_async(self, query: str, file_path: str | None = None) -> str:
         """Async wrapper for analyze."""
         return await asyncio.to_thread(self.analyze, query, file_path)

@@ -16,7 +16,7 @@ class TestStandaloneAnalystInit:
 
     def test_init_creates_client(self, mock_settings):
         """Should create Anthropic client on init."""
-        with patch("anthropic.Anthropic") as mock_client:
+        with patch("analyst.Anthropic") as mock_client:
             from analyst import StandaloneAnalyst
 
             StandaloneAnalyst()
