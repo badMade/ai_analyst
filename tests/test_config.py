@@ -6,10 +6,11 @@ Tests the Settings class, environment variable handling, and utility functions.
 
 import os
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from ai_analyst.utils.config import sanitize_path
+from ai_analyst.utils.config import sanitize_path, check_pro_subscription_available
 
 class TestSettings:
     """Tests for Settings class."""
@@ -112,3 +113,50 @@ class TestEnvironmentConfiguration:
         # pydantic-settings uses the empty string from the env var
         # instead of falling back to the default.
         assert settings.anthropic_api_key == ""
+
+
+class TestCheckProSubscriptionAvailable:
+    """Tests for check_pro_subscription_available function."""
+
+    @patch("ai_analyst.utils.config.shutil.which")
+    def test_claude_not_installed(self, mock_which):
+        """Should return False if claude CLI is not installed."""
+        mock_which.return_value = None
+        assert check_pro_subscription_available() is False
+
+    @patch("ai_analyst.utils.config.subprocess.run")
+    @patch("ai_analyst.utils.config.shutil.which")
+    def test_claude_auth_failed(self, mock_which, mock_run):
+        """Should return False if claude auth-status fails."""
+        mock_which.return_value = "/usr/bin/claude"
+
+        # Mock subprocess.run return value
+        mock_result = MagicMock()
+        mock_result.returncode = 1
+        mock_run.return_value = mock_result
+
+        assert check_pro_subscription_available() is False
+        mock_run.assert_called_once()
+
+    @patch("ai_analyst.utils.config.subprocess.run")
+    @patch("ai_analyst.utils.config.shutil.which")
+    def test_claude_auth_success(self, mock_which, mock_run):
+        """Should return True if claude auth-status succeeds."""
+        mock_which.return_value = "/usr/bin/claude"
+
+        # Mock subprocess.run return value
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_run.return_value = mock_result
+
+        assert check_pro_subscription_available() is True
+        mock_run.assert_called_once()
+
+    @patch("ai_analyst.utils.config.subprocess.run")
+    @patch("ai_analyst.utils.config.shutil.which")
+    def test_claude_exception(self, mock_which, mock_run):
+        """Should return False if an exception occurs during subprocess execution."""
+        mock_which.return_value = "/usr/bin/claude"
+        mock_run.side_effect = Exception("Unexpected error")
+
+        assert check_pro_subscription_available() is False
