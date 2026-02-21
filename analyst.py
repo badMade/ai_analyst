@@ -492,6 +492,15 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
             
             return json.dumps(result, indent=2, default=str)
         
+        except KeyError as e:
+            logger.warning(f"Key error in tool {tool_name}: {e}")
+            return json.dumps({"error": f"Missing column or key: {str(e)}"})
+        except ValueError as e:
+            logger.warning(f"Value error in tool {tool_name}: {e}")
+            return json.dumps({"error": f"Invalid value: {str(e)}"})
+        except FileNotFoundError as e:
+            logger.warning(f"File not found in tool {tool_name}: {e}")
+            return json.dumps({"error": f"File not found: {str(e)}"})
         except Exception as e:
             logger.exception(f"Tool execution error: {tool_name}")
             return json.dumps({"error": str(e)})

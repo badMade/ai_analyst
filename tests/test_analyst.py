@@ -16,7 +16,7 @@ class TestStandaloneAnalystInit:
 
     def test_init_creates_client(self, mock_settings):
         """Should create Anthropic client on init."""
-        with patch("anthropic.Anthropic") as mock_client:
+        with patch("analyst.Anthropic") as mock_client:
             from analyst import StandaloneAnalyst
 
             StandaloneAnalyst()
@@ -25,7 +25,7 @@ class TestStandaloneAnalystInit:
 
     def test_init_uses_provided_model(self, mock_settings):
         """Should use the provided model name."""
-        with patch("anthropic.Anthropic"):
+        with patch("analyst.Anthropic"):
             from analyst import StandaloneAnalyst
 
             analyst = StandaloneAnalyst(model="claude-3-opus-20240229")
@@ -34,7 +34,7 @@ class TestStandaloneAnalystInit:
 
     def test_init_creates_analysis_context(self, mock_settings):
         """Should create an AnalysisContext."""
-        with patch("anthropic.Anthropic"):
+        with patch("analyst.Anthropic"):
             from analyst import StandaloneAnalyst, AnalysisContext
 
             analyst = StandaloneAnalyst()
@@ -43,7 +43,7 @@ class TestStandaloneAnalystInit:
 
     def test_init_sets_max_iterations(self, mock_settings):
         """Should set max iterations limit."""
-        with patch("anthropic.Anthropic"):
+        with patch("analyst.Anthropic"):
             from analyst import StandaloneAnalyst
 
             analyst = StandaloneAnalyst()
@@ -56,7 +56,7 @@ class TestStandaloneAnalystInit:
         with patch("analyst.get_auth_method") as mock_get_auth_method:
             mock_get_auth_method.side_effect = ValueError("Missing ANTHROPIC_API_KEY")
 
-            with patch("anthropic.Anthropic"):
+            with patch("analyst.Anthropic"):
                 from analyst import StandaloneAnalyst
 
                 with pytest.raises(ValueError, match="ANTHROPIC_API_KEY"):
@@ -69,7 +69,7 @@ class TestExecuteTool:
     @pytest.fixture
     def analyst_with_data(self, mock_settings, sample_csv_file):
         """Create analyst with loaded dataset."""
-        with patch("anthropic.Anthropic"):
+        with patch("analyst.Anthropic"):
             from analyst import StandaloneAnalyst
 
             analyst = StandaloneAnalyst()
@@ -78,7 +78,7 @@ class TestExecuteTool:
 
     def test_execute_load_dataset(self, mock_settings, sample_csv_file):
         """Should execute load_dataset tool."""
-        with patch("anthropic.Anthropic"):
+        with patch("analyst.Anthropic"):
             from analyst import StandaloneAnalyst
 
             analyst = StandaloneAnalyst()
@@ -242,7 +242,7 @@ class TestAnalyze:
     @pytest.fixture
     def analyst(self, mock_settings):
         """Create analyst with mocked client."""
-        with patch("anthropic.Anthropic") as mock_client_class:
+        with patch("analyst.Anthropic") as mock_client_class:
             from analyst import StandaloneAnalyst
 
             analyst = StandaloneAnalyst()
@@ -317,7 +317,7 @@ class TestAnalyzeAsync:
     @pytest.fixture
     def analyst(self, mock_settings):
         """Create analyst with mocked client."""
-        with patch("anthropic.Anthropic"):
+        with patch("analyst.Anthropic"):
             from analyst import StandaloneAnalyst
 
             analyst = StandaloneAnalyst()
@@ -350,7 +350,7 @@ class TestCreateAnalyst:
 
     def test_create_analyst_returns_instance(self, mock_settings):
         """Should return StandaloneAnalyst instance."""
-        with patch("anthropic.Anthropic"):
+        with patch("analyst.Anthropic"):
             from analyst import create_analyst, StandaloneAnalyst
 
             analyst = create_analyst()
@@ -359,7 +359,7 @@ class TestCreateAnalyst:
 
     def test_create_analyst_with_model(self, mock_settings):
         """Should pass model to constructor."""
-        with patch("anthropic.Anthropic"):
+        with patch("analyst.Anthropic"):
             from analyst import create_analyst
 
             analyst = create_analyst(model="claude-3-haiku-20240307")
@@ -414,3 +414,56 @@ class TestToolDefinitions:
         }
 
         assert expected.issubset(tool_names)
+
+class TestExecuteToolErrorHandling:
+    """Tests for error handling in _execute_tool method."""
+
+    @pytest.fixture
+    def analyst(self, mock_settings):
+        """Create analyst with mocked client and context."""
+        with patch("analyst.Anthropic"):
+            from analyst import StandaloneAnalyst
+            analyst = StandaloneAnalyst()
+            analyst.context = MagicMock()
+            return analyst
+
+    def test_key_error_handling(self, analyst):
+        """Should return descriptive error for KeyError."""
+        analyst.context.get_dataset.side_effect = KeyError("missing_column")
+
+        result = analyst._execute_tool("describe_statistics", {
+            "dataset_name": "test_data",
+            "column": "missing_column"
+        })
+
+        result_dict = json.loads(result)
+        assert "error" in result_dict
+        assert "Missing column or key" in result_dict["error"]
+        assert "missing_column" in result_dict["error"]
+
+    def test_value_error_handling(self, analyst):
+        """Should return descriptive error for ValueError."""
+        analyst.context.get_dataset.side_effect = ValueError("Invalid dataset name")
+
+        result = analyst._execute_tool("describe_statistics", {
+            "dataset_name": "invalid_name"
+        })
+
+        result_dict = json.loads(result)
+        assert "error" in result_dict
+        assert "Invalid value" in result_dict["error"]
+        assert "Invalid dataset name" in result_dict["error"]
+
+    def test_file_not_found_error_handling(self, analyst):
+        """Should return descriptive error for FileNotFoundError."""
+        # For load_dataset, it calls context.load_dataset
+        analyst.context.load_dataset.side_effect = FileNotFoundError("File not found: test.csv")
+
+        result = analyst._execute_tool("load_dataset", {
+            "file_path": "test.csv"
+        })
+
+        result_dict = json.loads(result)
+        assert "error" in result_dict
+        assert "File not found" in result_dict["error"]
+        assert "test.csv" in result_dict["error"]
