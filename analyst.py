@@ -16,7 +16,7 @@ from anthropic import Anthropic
 from pydantic import BaseModel
 
 from ai_analyst.tools.statistical import (
-    compute_descriptive_stats,
+    compute_dataframe_stats,
     test_normality,
     test_correlation_significance,
     detect_trend,
@@ -342,19 +342,14 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
             elif tool_name == "describe_statistics":
                 df = self.context.get_dataset(tool_input["dataset_name"])
                 columns = tool_input.get("columns")
-                
+
                 if columns:
                     df = df[columns]
-                
+
                 numeric_df = df.select_dtypes(include=[np.number])
-                stats = []
-                
-                for col in numeric_df.columns:
-                    stats.append({
-                        "column": col,
-                        **compute_descriptive_stats(numeric_df[col])
-                    })
-                
+                # Optimized: use vectorized computation for all columns at once
+                stats = compute_dataframe_stats(numeric_df)
+
                 result = {"statistics": stats}
             
             elif tool_name == "compute_correlation":
