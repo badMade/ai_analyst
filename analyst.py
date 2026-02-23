@@ -492,9 +492,27 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
             
             return json.dumps(result, indent=2, default=str)
         
+        except KeyError as e:
+            logger.warning(f"Tool {tool_name} missing parameter or column: {e}")
+            return json.dumps({"error": f"Missing column or key: {str(e)}"})
+
+        except FileNotFoundError as e:
+            fname = tool_input.get("file_path") or tool_input.get("dataset_name") or "specified file"
+            logger.warning(f"File not found in {tool_name}: {e}")
+            return json.dumps({"error": f"File not found: {fname}"})
+
+        except ValueError as e:
+            msg = str(e)
+            if "Invalid path" in msg or "outside of allowed base directory" in msg:
+                logger.warning(f"Security/Path error in {tool_name}: {msg}")
+                return json.dumps({"error": "Security Error: Invalid path or access denied."})
+
+            logger.warning(f"ValueError in {tool_name}: {e}")
+            return json.dumps({"error": f"Invalid value: {msg}"})
+
         except Exception as e:
             logger.exception(f"Tool execution error: {tool_name}")
-            return json.dumps({"error": str(e)})
+            return json.dumps({"error": "An internal error occurred during analysis."})
     
     def analyze(self, query: str, file_path: str | None = None) -> str:
         """
