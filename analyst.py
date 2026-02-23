@@ -368,17 +368,17 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                 numeric_df = df.select_dtypes(include=[np.number])
                 corr_matrix = numeric_df.corr(method=method)
                 
-                correlations = []
-                cols = corr_matrix.columns.tolist()
-                for i, col_a in enumerate(cols):
-                    for col_b in cols[i+1:]:
-                        corr = corr_matrix.loc[col_a, col_b]
-                        if pd.notna(corr):
-                            correlations.append({
-                                "column_a": col_a,
-                                "column_b": col_b,
-                                "correlation": round(corr, 4)
-                            })
+                # Get upper triangle only (excluding diagonal) to avoid duplicates
+                mask = np.triu(np.ones(corr_matrix.shape), k=1).astype(bool)
+                upper = corr_matrix.where(mask)
+
+                # Stack and convert to list of dicts (explicit dropna() required for pandas 3.0 compatibility)
+                stacked = upper.stack().dropna().reset_index()
+                stacked.columns = ['column_a', 'column_b', 'correlation']
+
+                stacked['correlation'] = stacked['correlation'].round(4)
+
+                correlations = stacked.to_dict(orient='records')
                 
                 correlations.sort(key=lambda x: abs(x["correlation"]), reverse=True)
                 result = {"correlations": correlations, "method": method}
