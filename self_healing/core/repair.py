@@ -129,10 +129,6 @@ class RepairEngine:
                 "engine": "python",
             },
             confidence=0.85,
-            context={
-                "file_path": str(file_path),
-                "suggested_code": "pd.read_csv(path, encoding='utf-8', errors='replace')",
-            },
         )
 
     def _fix_memory(self, error: DetectedError) -> Fix:
@@ -149,9 +145,6 @@ class RepairEngine:
                 "low_memory": True,
             },
             confidence=0.80,
-            context={
-                "suggested_code": "for chunk in pd.read_csv(path, chunksize=10000): process(chunk)",
-            },
         )
 
     def _fix_api_rate_limit(self, error: DetectedError) -> Fix:
@@ -210,13 +203,6 @@ class RepairEngine:
             description="Map or create missing column",
             reasoning="Required column not found in data",
             confidence=0.70,
-            context={
-                "suggested_actions": [
-                    "Check column names for typos",
-                    "Use df.columns to list available columns",
-                    "Create column with default value if needed",
-                ]
-            },
         )
 
     def _fix_type_mismatch(self, error: DetectedError) -> Fix:
@@ -230,9 +216,6 @@ class RepairEngine:
                 "errors": "coerce",
             },
             confidence=0.75,
-            context={
-                "suggested_code": "pd.to_numeric(col, errors='coerce')",
-            },
         )
 
     def _fix_syntax(self, error: DetectedError) -> Fix:
@@ -243,10 +226,6 @@ class RepairEngine:
             description="Fix syntax error",
             reasoning=f"Syntax error at {error.location}",
             confidence=0.50,
-            context={
-                "error_text": error.context.get("text", ""),
-                "line_number": error.location.line_number,
-            },
         )
 
     def _fix_data_loading(self, error: DetectedError) -> Fix:
