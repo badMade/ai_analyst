@@ -17,6 +17,7 @@ from pydantic import BaseModel
 
 from ai_analyst.tools.statistical import (
     compute_descriptive_stats,
+    compute_dataframe_stats,
     test_normality,
     test_correlation_significance,
     detect_trend,
@@ -347,13 +348,7 @@ Be thorough but efficient. Present results in a structured, easy-to-understand f
                     df = df[columns]
                 
                 numeric_df = df.select_dtypes(include=[np.number])
-                stats = []
-                
-                for col in numeric_df.columns:
-                    stats.append({
-                        "column": col,
-                        **compute_descriptive_stats(numeric_df[col])
-                    })
+                stats = compute_dataframe_stats(numeric_df)
                 
                 result = {"statistics": stats}
             
