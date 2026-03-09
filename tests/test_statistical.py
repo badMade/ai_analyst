@@ -127,6 +127,18 @@ class TestTestCorrelationSignificance:
         assert isinstance(corr, (int, float))
         assert isinstance(p_value, (int, float))
 
+    def test_detects_strong_positive_correlation(self):
+        """Should return a strong positive correlation for linear data."""
+        from ai_analyst.tools.statistical import test_correlation_significance
+
+        x = pd.Series([1, 2, 3, 4, 5])
+        y = pd.Series([2, 4, 6, 8, 10])
+
+        corr, p_value = test_correlation_significance(x, y)
+
+        assert corr == pytest.approx(1.0)
+        assert p_value < 0.05
+
 
 class TestDetectTrend:
     """Tests for detect_trend function."""
