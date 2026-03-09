@@ -24,6 +24,7 @@ class TestStandaloneAnalystInit:
 
             _ = analyst.client
             mock_client.assert_called_once()
+            mock_async_client.assert_called_once()
 
     def test_init_uses_provided_model(self, mock_settings):
         """Should use the provided model name."""
@@ -58,7 +59,7 @@ class TestStandaloneAnalystInit:
         with patch("analyst.get_auth_method") as mock_get_auth_method:
             mock_get_auth_method.side_effect = ValueError("Missing ANTHROPIC_API_KEY")
 
-            with patch("analyst.Anthropic"):
+            with patch("analyst.Anthropic"), patch("analyst.AsyncAnthropic"):
                 from analyst import StandaloneAnalyst
 
                 with pytest.raises(ValueError, match="ANTHROPIC_API_KEY"):
