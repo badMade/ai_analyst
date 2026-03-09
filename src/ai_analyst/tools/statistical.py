@@ -26,6 +26,46 @@ def compute_descriptive_stats(series: pd.Series) -> dict[str, float]:
     }
 
 
+def compute_dataframe_stats(df: pd.DataFrame) -> list[dict]:
+    """
+    Computes descriptive statistics for a DataFrame efficiently using vectorized operations.
+    Replaces row-by-row iteration over pd.Series.describe().
+    """
+    import numpy as np
+
+    # Early return when no columns to process
+    if df.columns.empty:
+        return []
+
+    counts = df.count()
+
+    # Calculate quantiles in one go for efficiency
+    if not df.empty:
+        quantiles = df.quantile([0.25, 0.5, 0.75])
+    else:
+        # Create an empty DataFrame with the right index and columns full of NaNs
+        quantiles = pd.DataFrame(np.nan, index=[0.25, 0.5, 0.75], columns=df.columns)
+
+    stats_df = pd.DataFrame({
+        "count": counts,
+        "mean": df.mean() if not df.empty else np.nan,
+        "std": df.std() if not df.empty else np.nan,
+        "min": df.min() if not df.empty else np.nan,
+        "25%": quantiles.loc[0.25],
+        "50%": quantiles.loc[0.5],
+        "75%": quantiles.loc[0.75],
+        "max": df.max() if not df.empty else np.nan,
+    })
+
+    # Standard deviation calculations return NaN when the count of values is less than 2
+    stats_df.loc[counts < 2, 'std'] = np.nan
+
+    stats_df.index.name = 'column'
+
+    # Convert and return, handling proper index reset
+    return stats_df.reset_index().to_dict(orient='records')
+
+
 def test_normality(series: pd.Series, alpha: float = 0.05) -> TestResult:
     """Performs the Shapiro-Wilk test for normality."""
     # The Shapiro-Wilk test requires at least 3 data points.
