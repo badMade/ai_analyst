@@ -63,7 +63,7 @@ class TestLoadDataset:
     def test_load_file_not_found(self, analysis_context):
         """Should raise FileNotFoundError for missing files."""
         with pytest.raises(FileNotFoundError, match="File not found"):
-            analysis_context.load_dataset("/nonexistent/path/data.csv")
+            analysis_context.load_dataset("nonexistent_data.csv")
 
     def test_load_unsupported_format(self, analysis_context, tmp_path):
         """Should raise ValueError for unsupported file formats."""
