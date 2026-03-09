@@ -7,11 +7,11 @@ Validates fixes by running tests, checking syntax, and verifying behavior.
 from __future__ import annotations
 
 import ast
+import shlex
 import subprocess
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 
 from self_healing.models.errors import DetectedError, ErrorType
 from self_healing.models.fixes import Fix, FixResult, FixStrategy
@@ -62,14 +62,14 @@ class FixValidator:
     4. Runtime verification
     """
 
-    def __init__(self, config: Optional[ValidationConfig] = None) -> None:
+    def __init__(self, config: ValidationConfig | None = None) -> None:
         self.config = config or ValidationConfig()
 
     def validate(
         self,
         fix: Fix,
         result: FixResult,
-        working_dir: Optional[Path] = None,
+        working_dir: Path | None = None,
     ) -> ValidationResult:
         """Validate a fix after application."""
         start_time = time.time()
@@ -181,12 +181,12 @@ class FixValidator:
         except Exception:
             return False
 
-    def _run_tests(self, working_dir: Optional[Path] = None) -> dict:
+    def _run_tests(self, working_dir: Path | None = None) -> dict:
         """Run test suite."""
         try:
             result = subprocess.run(
-                self.config.test_command,
-                shell=True,
+                shlex.split(self.config.test_command),
+                shell=False,
                 capture_output=True,
                 text=True,
                 timeout=self.config.test_timeout,
@@ -218,7 +218,7 @@ class FixValidator:
         self,
         original_error: DetectedError,
         fix: Fix,
-        working_dir: Optional[Path] = None,
+        working_dir: Path | None = None,
     ) -> bool:
         """Check if the original error is resolved."""
         # For file not found, check if file now exists

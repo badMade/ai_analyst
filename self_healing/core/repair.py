@@ -6,13 +6,13 @@ Generates and applies fixes for detected errors with backup and rollback support
 
 from __future__ import annotations
 
+import shlex
 import shutil
 import subprocess
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
 
 from self_healing.models.errors import DetectedError, ErrorType
 from self_healing.models.fixes import (
@@ -47,12 +47,12 @@ class RepairEngine:
     - Dry-run mode for testing
     """
 
-    def __init__(self, config: Optional[RepairConfig] = None) -> None:
+    def __init__(self, config: RepairConfig | None = None) -> None:
         self.config = config or RepairConfig()
         self.config.backup_dir.mkdir(parents=True, exist_ok=True)
         self._backups: dict[str, Path] = {}
 
-    def generate_fix(self, error: DetectedError) -> Optional[Fix]:
+    def generate_fix(self, error: DetectedError) -> Fix | None:
         """Generate a fix for the detected error."""
         strategy_map = {
             ErrorType.IMPORT: self._fix_import,
@@ -328,8 +328,8 @@ class RepairEngine:
         """Execute a shell command."""
         try:
             result = subprocess.run(
-                cmd.command,
-                shell=True,
+                shlex.split(cmd.command),
+                shell=False,
                 capture_output=True,
                 text=True,
                 timeout=cmd.timeout,
