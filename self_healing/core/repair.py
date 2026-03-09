@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
-from self_healing.models.errors import DetectedError, ErrorType, EnvironmentType
+from self_healing.models.errors import DetectedError, ErrorType
 from self_healing.models.fixes import (
     CodePatch,
     Fix,
@@ -22,7 +22,6 @@ from self_healing.models.fixes import (
     FixStatus,
     FixStrategy,
     ShellCommand,
-    FIX_TEMPLATES,
 )
 
 
@@ -116,8 +115,6 @@ class RepairEngine:
 
     def _fix_encoding(self, error: DetectedError) -> Fix:
         """Generate fix for encoding errors."""
-        file_path = error.location.file_path
-
         return Fix(
             error=error,
             strategy=FixStrategy.ENCODING_FIX,
@@ -283,7 +280,7 @@ class RepairEngine:
                 backup_path=self._backups.get(fix.fix_id),
             )
 
-        except Exception as e:
+        except (OSError, RuntimeError, subprocess.SubprocessError) as e:
             fix.mark_failed()
             if self.config.auto_rollback:
                 self._rollback(fix.fix_id)
@@ -337,12 +334,13 @@ class RepairEngine:
                 text=True,
                 timeout=cmd.timeout,
                 cwd=cmd.working_dir,
+                check=False,
             )
             output = result.stdout + result.stderr
             return output.strip() if output else "Command completed"
         except subprocess.TimeoutExpired:
             return f"Command timed out after {cmd.timeout}s"
-        except Exception as e:
+        except OSError as e:
             return f"Command error: {e}"
 
     def _rollback(self, fix_id: str) -> bool:
@@ -351,12 +349,7 @@ class RepairEngine:
         if not backup_dir or not backup_dir.exists():
             return False
 
-        for backup_file in backup_dir.glob("*.bak"):
-            original_name = backup_file.stem.rsplit(".", 1)[0]
-            # Find original location from patch records
-            # For now, just report the backup exists
-            pass
-
+        # Backup files exist; original location tracking not yet implemented
         return True
 
     def cleanup_old_backups(self) -> int:
