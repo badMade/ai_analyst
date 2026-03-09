@@ -1,0 +1,3 @@
+## 2025-02-28 - Optimize Column Stats Aggregation
+**Learning:** Computing descriptive statistics by iterating over dataframe columns and calling `.describe()` on each is significantly slower (O(N) operation) than using vectorized pandas aggregations (`count()`, `mean()`, `std()`, `quantile()`, etc.) across the entire DataFrame at once.
+**Action:** Always prefer single vectorized calls (e.g., `df.mean()`, `df.quantile()`) to manually construct statistical summaries for wide DataFrames instead of looping over columns, as it provides an order-of-magnitude performance improvement. Ensure edge cases like empty dataframes without numeric columns are handled gracefully with fast-paths.
