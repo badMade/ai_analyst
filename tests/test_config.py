@@ -112,3 +112,89 @@ class TestEnvironmentConfiguration:
         # pydantic-settings uses the empty string from the env var
         # instead of falling back to the default.
         assert settings.anthropic_api_key == ""
+
+class TestAuthMethod:
+    """Tests for get_auth_method logic."""
+
+    def test_auth_preference_pro_prioritizes_subscription(self, monkeypatch):
+        """Should prioritize Pro subscription when preference is 'pro'."""
+        monkeypatch.setenv("AUTH_PREFERENCE", "pro")
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test-key")
+
+        # Mock check_pro_subscription_available to return True
+        monkeypatch.setattr(
+            "ai_analyst.utils.config.check_pro_subscription_available",
+            lambda: True
+        )
+
+        from ai_analyst.utils.config import get_auth_method, AuthMethod
+
+        method, key = get_auth_method()
+        assert method == AuthMethod.PRO_SUBSCRIPTION
+        assert key is None
+
+    def test_auth_preference_api_prioritizes_key(self, monkeypatch):
+        """Should prioritize API key when preference is 'api'."""
+        monkeypatch.setenv("AUTH_PREFERENCE", "api")
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test-key")
+
+        # Mock check_pro_subscription_available to return True
+        monkeypatch.setattr(
+            "ai_analyst.utils.config.check_pro_subscription_available",
+            lambda: True
+        )
+
+        from ai_analyst.utils.config import get_auth_method, AuthMethod
+
+        method, key = get_auth_method()
+        assert method == AuthMethod.API_KEY
+        assert key == "sk-test-key"
+
+    def test_fallback_to_api_key_when_pro_unavailable(self, monkeypatch):
+        """Should fall back to API key when Pro is unavailable."""
+        monkeypatch.setenv("AUTH_PREFERENCE", "pro")
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test-key")
+
+        # Mock check_pro_subscription_available to return False
+        monkeypatch.setattr(
+            "ai_analyst.utils.config.check_pro_subscription_available",
+            lambda: False
+        )
+
+        from ai_analyst.utils.config import get_auth_method, AuthMethod
+
+        method, key = get_auth_method()
+        assert method == AuthMethod.API_KEY
+        assert key == "sk-test-key"
+
+    def test_fallback_to_pro_when_api_key_missing(self, monkeypatch):
+        """Should fall back to Pro subscription when API key is missing."""
+        monkeypatch.setenv("AUTH_PREFERENCE", "api")
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "")
+
+        # Mock check_pro_subscription_available to return True
+        monkeypatch.setattr(
+            "ai_analyst.utils.config.check_pro_subscription_available",
+            lambda: True
+        )
+
+        from ai_analyst.utils.config import get_auth_method, AuthMethod
+
+        method, key = get_auth_method()
+        assert method == AuthMethod.PRO_SUBSCRIPTION
+        assert key is None
+
+    def test_no_auth_method_raises_error(self, monkeypatch):
+        """Should raise ValueError when no auth method is available."""
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "")
+
+        # Mock check_pro_subscription_available to return False
+        monkeypatch.setattr(
+            "ai_analyst.utils.config.check_pro_subscription_available",
+            lambda: False
+        )
+
+        from ai_analyst.utils.config import get_auth_method
+
+        with pytest.raises(ValueError, match="No authentication method available"):
+            get_auth_method()
