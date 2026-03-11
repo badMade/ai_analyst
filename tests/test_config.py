@@ -4,12 +4,12 @@ Tests for configuration and settings.
 Tests the Settings class, environment variable handling, and utility functions.
 """
 
-import os
 from pathlib import Path
 
 import pytest
 
 from ai_analyst.utils.config import sanitize_path
+
 
 class TestSettings:
     """Tests for Settings class."""
@@ -32,7 +32,7 @@ class TestSettings:
 
     def test_get_settings_returns_settings_instance(self):
         """get_settings should return a Settings instance."""
-        from ai_analyst.utils.config import get_settings, Settings
+        from ai_analyst.utils.config import Settings, get_settings
 
         settings = get_settings()
         assert isinstance(settings, Settings)

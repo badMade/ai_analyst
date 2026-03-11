@@ -4,8 +4,8 @@ Tests for AnalysisContext class.
 Tests dataset loading, retrieval, and error handling for different file formats.
 """
 
-import pytest
 import pandas as pd
+import pytest
 
 
 class TestAnalysisContextInit:
@@ -84,10 +84,7 @@ class TestLoadDataset:
     def test_load_returns_null_counts(self, analysis_context, tmp_path):
         """Should return null counts per column."""
         # Create file with nulls
-        df = pd.DataFrame({
-            "a": [1, 2, None, 4],
-            "b": ["x", None, "y", "z"]
-        })
+        df = pd.DataFrame({"a": [1, 2, None, 4], "b": ["x", None, "y", "z"]})
         csv_path = tmp_path / "nulls.csv"
         df.to_csv(csv_path, index=False)
 

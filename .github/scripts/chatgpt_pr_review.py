@@ -84,9 +84,7 @@ def parse_review_verdict(review_text: str) -> str:
     return "comment"
 
 
-def set_commit_status(
-    repo, sha: str, state: str, description: str, context: str
-) -> None:
+def set_commit_status(repo, sha: str, state: str, description: str, context: str) -> None:
     """Set a commit status on the PR head SHA."""
     repo.get_commit(sha).create_status(
         state=state,
@@ -121,17 +119,18 @@ def main():
     if not api_key:
         print("OPENAI_API_KEY not set, skipping ChatGPT review")
         set_commit_status(
-            repo, head_sha, "success",
-            "Skipped - API key not configured", status_context,
+            repo,
+            head_sha,
+            "success",
+            "Skipped - API key not configured",
+            status_context,
         )
         return
 
     client = OpenAI(api_key=api_key)
 
     # Set pending status while review is running
-    set_commit_status(
-        repo, head_sha, "pending", "ChatGPT review in progress...", status_context
-    )
+    set_commit_status(repo, head_sha, "pending", "ChatGPT review in progress...", status_context)
 
     # Get diff and context
     diff = get_pr_diff()
@@ -142,8 +141,11 @@ def main():
     if not diff:
         print("No diff found, skipping ChatGPT review")
         set_commit_status(
-            repo, head_sha, "success",
-            "Skipped - no diff found", status_context,
+            repo,
+            head_sha,
+            "success",
+            "Skipped - no diff found",
+            status_context,
         )
         return
 
@@ -165,7 +167,7 @@ Format your response in GitHub-flavored markdown."""
 **Description:** {pr_body}
 
 ## Changed Files
-{chr(10).join(f'- {f}' for f in changed_files)}
+{chr(10).join(f"- {f}" for f in changed_files)}
 
 ## Diff
 ```diff
@@ -217,28 +219,38 @@ Provide a thorough review covering:
         # Set commit status based on verdict
         if verdict == "approve":
             set_commit_status(
-                repo, head_sha, "success",
-                "ChatGPT approved this PR", status_context,
+                repo,
+                head_sha,
+                "success",
+                "ChatGPT approved this PR",
+                status_context,
             )
         elif verdict == "request_changes":
             set_commit_status(
-                repo, head_sha, "failure",
-                "ChatGPT requested changes", status_context,
+                repo,
+                head_sha,
+                "failure",
+                "ChatGPT requested changes",
+                status_context,
             )
         else:
             set_commit_status(
-                repo, head_sha, "failure",
-                "ChatGPT did not explicitly approve", status_context,
+                repo,
+                head_sha,
+                "failure",
+                "ChatGPT did not explicitly approve",
+                status_context,
             )
 
     except Exception as e:
         print(f"Error generating review: {e}")
-        pr.create_issue_comment(
-            f"ChatGPT Code Review encountered an error: {str(e)}"
-        )
+        pr.create_issue_comment(f"ChatGPT Code Review encountered an error: {str(e)}")
         set_commit_status(
-            repo, head_sha, "error",
-            "ChatGPT review failed", status_context,
+            repo,
+            head_sha,
+            "error",
+            "ChatGPT review failed",
+            status_context,
         )
 
 

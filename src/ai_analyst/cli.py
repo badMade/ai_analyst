@@ -7,6 +7,7 @@ Provides command-line interface for data analysis using Claude.
 
 import sys
 from importlib.metadata import PackageNotFoundError, version
+
 import click
 from rich.console import Console
 
@@ -21,7 +22,7 @@ def get_cli_version() -> str:
 
 
 def show_authentication_method() -> None:
-    from ai_analyst.utils.config import get_auth_method, AuthMethod
+    from ai_analyst.utils.config import AuthMethod, get_auth_method
 
     # Show authentication method
     try:
@@ -33,6 +34,7 @@ def show_authentication_method() -> None:
     except ValueError as e:
         console.print(f"[red]Authentication Error:[/red]\n{e}")
         sys.exit(1)
+
 
 @click.group()
 @click.version_option(version=get_cli_version(), prog_name="ai-analyst")
@@ -60,7 +62,12 @@ def interactive(file_path: str | None, model: str) -> None:
 
 @main.command()
 @click.argument("file_path", type=click.Path(exists=True))
-@click.option("--query", "-q", default="Provide a comprehensive analysis of this dataset", help="Analysis query")
+@click.option(
+    "--query",
+    "-q",
+    default="Provide a comprehensive analysis of this dataset",
+    help="Analysis query",
+)
 @click.option("--model", "-m", default="claude-sonnet-4-20250514", help="Claude model to use")
 def analyze(file_path: str, query: str, model: str) -> None:
     """Analyze a data file."""
@@ -77,6 +84,7 @@ def analyze(file_path: str, query: str, model: str) -> None:
     result = analyst.analyze(query, file_path)
 
     from rich.markdown import Markdown
+
     console.print(Markdown(result))
 
 
@@ -86,6 +94,7 @@ def inspect(file_path: str) -> None:
     """Inspect a data file structure."""
     import pandas as pd
     from rich.table import Table
+
     from ai_analyst.utils.config import sanitize_path
 
     try:
@@ -111,7 +120,13 @@ def inspect(file_path: str) -> None:
 
     try:
         df = reader(path)
-    except (pd.errors.EmptyDataError, pd.errors.ParserError, PermissionError, OSError, ValueError) as exc:
+    except (
+        pd.errors.EmptyDataError,
+        pd.errors.ParserError,
+        PermissionError,
+        OSError,
+        ValueError,
+    ) as exc:
         console.print(f"[red]Error reading file:[/red] {exc}")
         sys.exit(1)
 
@@ -136,10 +151,10 @@ def inspect(file_path: str) -> None:
 def auth() -> None:
     """Check authentication status and available methods."""
     from ai_analyst.utils.config import (
-        get_auth_method,
-        check_pro_subscription_available,
-        get_settings,
         AuthMethod,
+        check_pro_subscription_available,
+        get_auth_method,
+        get_settings,
     )
 
     console.print("\n[bold]Authentication Status[/bold]\n")

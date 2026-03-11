@@ -84,7 +84,7 @@ Format responses in GitHub-flavored markdown."""
 
     user_message = f"""Repository: {repo.full_name}
 Title: {issue_or_pr.title}
-Description: {issue_or_pr.body or 'No description'}
+Description: {issue_or_pr.body or "No description"}
 
 User request: {prompt}
 

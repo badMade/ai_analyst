@@ -4,8 +4,8 @@ Shared test fixtures for AI Analyst tests.
 
 from unittest.mock import MagicMock, patch
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 import pytest
 
 
@@ -21,25 +21,29 @@ def base_data_dir(tmp_path, monkeypatch):
 def sample_dataframe():
     """Create a sample DataFrame for testing."""
     np.random.seed(42)
-    return pd.DataFrame({
-        "id": range(1, 101),
-        "category": np.random.choice(["A", "B", "C"], 100),
-        "value": np.random.randn(100) * 100 + 500,
-        "count": np.random.randint(1, 50, 100),
-        "date": pd.date_range("2024-01-01", periods=100, freq="D"),
-    })
+    return pd.DataFrame(
+        {
+            "id": range(1, 101),
+            "category": np.random.choice(["A", "B", "C"], 100),
+            "value": np.random.randn(100) * 100 + 500,
+            "count": np.random.randint(1, 50, 100),
+            "date": pd.date_range("2024-01-01", periods=100, freq="D"),
+        }
+    )
 
 
 @pytest.fixture
 def sample_dataframe_with_nulls():
     """Create a sample DataFrame with null values for testing data quality."""
     np.random.seed(42)
-    df = pd.DataFrame({
-        "id": range(1, 51),
-        "name": ["Item " + str(i) for i in range(1, 51)],
-        "value": np.random.randn(50) * 100 + 500,
-        "category": np.random.choice(["X", "Y", "Z"], 50),
-    })
+    df = pd.DataFrame(
+        {
+            "id": range(1, 51),
+            "name": ["Item " + str(i) for i in range(1, 51)],
+            "value": np.random.randn(50) * 100 + 500,
+            "category": np.random.choice(["X", "Y", "Z"], 50),
+        }
+    )
     # Add some null values
     df.loc[5:10, "value"] = np.nan
     df.loc[15:18, "category"] = None
@@ -55,10 +59,12 @@ def sample_dataframe_with_outliers():
     values[0] = 200  # Upper outlier
     values[1] = -100  # Lower outlier
     values[2] = 250  # Upper outlier
-    return pd.DataFrame({
-        "id": range(1, 101),
-        "value": values,
-    })
+    return pd.DataFrame(
+        {
+            "id": range(1, 101),
+            "value": values,
+        }
+    )
 
 
 @pytest.fixture
@@ -153,6 +159,7 @@ def env_with_api_key(monkeypatch):
 def analysis_context():
     """Create a fresh AnalysisContext for testing."""
     from analyst import AnalysisContext
+
     return AnalysisContext()
 
 

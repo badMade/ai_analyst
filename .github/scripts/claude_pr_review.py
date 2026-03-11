@@ -89,9 +89,7 @@ def parse_review_verdict(review_text: str) -> str:
     return "comment"
 
 
-def set_commit_status(
-    repo, sha: str, state: str, description: str, context: str
-) -> None:
+def set_commit_status(repo, sha: str, state: str, description: str, context: str) -> None:
     """Set a commit status on the PR head SHA."""
     repo.get_commit(sha).create_status(
         state=state,
@@ -140,17 +138,18 @@ def main():
     if not api_key:
         print("ANTHROPIC_API_KEY not set, skipping Claude review")
         set_commit_status(
-            repo, head_sha, "success",
-            "Skipped - API key not configured", status_context,
+            repo,
+            head_sha,
+            "success",
+            "Skipped - API key not configured",
+            status_context,
         )
         return
 
     client = anthropic.Anthropic(api_key=api_key)
 
     # Set pending status while review is running
-    set_commit_status(
-        repo, head_sha, "pending", "Claude review in progress...", status_context
-    )
+    set_commit_status(repo, head_sha, "pending", "Claude review in progress...", status_context)
 
     # Get diff and files
     diff = get_pr_diff()
@@ -159,8 +158,11 @@ def main():
     if not diff:
         print("No diff found, skipping Claude review")
         set_commit_status(
-            repo, head_sha, "success",
-            "Skipped - no diff found", status_context,
+            repo,
+            head_sha,
+            "success",
+            "Skipped - no diff found",
+            status_context,
         )
         return
 
@@ -185,7 +187,7 @@ Be thorough but concise. Prioritize the most important issues."""
 
 ## Pull Request
 **Title:** {pr.title}
-**Description:** {pr.body or 'No description provided'}
+**Description:** {pr.body or "No description provided"}
 
 ## Changed Files
 {files_list}
@@ -211,9 +213,7 @@ Be constructive and specific. Use inline code references where applicable."""
         response = client.messages.create(
             model=os.environ.get("CLAUDE_REVIEW_MODEL", "claude-sonnet-4-20250514"),
             max_tokens=2000,
-            messages=[
-                {"role": "user", "content": user_prompt}
-            ],
+            messages=[{"role": "user", "content": user_prompt}],
             system=system_prompt,
         )
 
@@ -243,40 +243,51 @@ Be constructive and specific. Use inline code references where applicable."""
         # Set commit status based on verdict
         if verdict == "approve":
             set_commit_status(
-                repo, head_sha, "success",
-                "Claude approved this PR", status_context,
+                repo,
+                head_sha,
+                "success",
+                "Claude approved this PR",
+                status_context,
             )
         elif verdict == "request_changes":
             set_commit_status(
-                repo, head_sha, "failure",
-                "Claude requested changes", status_context,
+                repo,
+                head_sha,
+                "failure",
+                "Claude requested changes",
+                status_context,
             )
         else:
             # Comment without explicit approval — do not sign off
             set_commit_status(
-                repo, head_sha, "failure",
-                "Claude did not explicitly approve", status_context,
+                repo,
+                head_sha,
+                "failure",
+                "Claude did not explicitly approve",
+                status_context,
             )
 
     except anthropic.APIError as e:
         error_msg = f"Claude API error during review generation: {e}"
         print(error_msg)
-        pr.create_issue_comment(
-            f"Claude Code Review encountered an API error: {error_msg}"
-        )
+        pr.create_issue_comment(f"Claude Code Review encountered an API error: {error_msg}")
         set_commit_status(
-            repo, head_sha, "error",
-            "Claude review failed (API error)", status_context,
+            repo,
+            head_sha,
+            "error",
+            "Claude review failed (API error)",
+            status_context,
         )
     except Exception as e:
         error_msg = f"Claude review failed due to an unexpected error: {e}"
         print(error_msg)
-        pr.create_issue_comment(
-            f"Claude Code Review encountered an error: {error_msg}"
-        )
+        pr.create_issue_comment(f"Claude Code Review encountered an error: {error_msg}")
         set_commit_status(
-            repo, head_sha, "error",
-            "Claude review failed (unexpected error)", status_context,
+            repo,
+            head_sha,
+            "error",
+            "Claude review failed (unexpected error)",
+            status_context,
         )
 
 

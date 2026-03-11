@@ -1,10 +1,11 @@
+import json
 import os
 import sys
 import time
-import pandas as pd
-import numpy as np
-import json
 from unittest.mock import MagicMock
+
+import numpy as np
+import pandas as pd
 
 # Mock Anthropic to avoid API key issues
 mock_anthropic = MagicMock()
@@ -18,6 +19,7 @@ try:
 except ImportError:
     sys.path.append(os.getcwd())
     from analyst import StandaloneAnalyst
+
 
 def benchmark():
     print("Generating synthetic data (1000 cols, 10000 rows)...")
@@ -53,6 +55,7 @@ def benchmark():
     result = json.loads(result_str)
     print(f"Quality Score: {result.get('quality_score')}")
     print(f"Columns with issues: {len(result.get('column_issues', {}))}")
+
 
 if __name__ == "__main__":
     benchmark()

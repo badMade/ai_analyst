@@ -86,9 +86,7 @@ def parse_review_verdict(review_text: str) -> str:
     return "comment"
 
 
-def set_commit_status(
-    repo, sha: str, state: str, description: str, context: str
-) -> None:
+def set_commit_status(repo, sha: str, state: str, description: str, context: str) -> None:
     """Set a commit status on the PR head SHA."""
     repo.get_commit(sha).create_status(
         state=state,
@@ -123,8 +121,11 @@ def main():
     if not api_key:
         print("GOOGLE_AI_API_KEY not set, skipping Gemini review")
         set_commit_status(
-            repo, head_sha, "success",
-            "Skipped - API key not configured", status_context,
+            repo,
+            head_sha,
+            "success",
+            "Skipped - API key not configured",
+            status_context,
         )
         return
 
@@ -132,9 +133,7 @@ def main():
     model = genai.GenerativeModel("gemini-2.0-flash")
 
     # Set pending status while review is running
-    set_commit_status(
-        repo, head_sha, "pending", "Gemini review in progress...", status_context
-    )
+    set_commit_status(repo, head_sha, "pending", "Gemini review in progress...", status_context)
 
     # Get diff and files
     diff = get_pr_diff()
@@ -143,8 +142,11 @@ def main():
     if not diff:
         print("No diff found, skipping Gemini review")
         set_commit_status(
-            repo, head_sha, "success",
-            "Skipped - no diff found", status_context,
+            repo,
+            head_sha,
+            "success",
+            "Skipped - no diff found",
+            status_context,
         )
         return
 
@@ -158,10 +160,10 @@ def main():
 
 ## Pull Request
 **Title:** {pr.title}
-**Description:** {pr.body or 'No description provided'}
+**Description:** {pr.body or "No description provided"}
 
 ## Changed Files
-{chr(10).join(f'- {f}' for f in changed_files if f)}
+{chr(10).join(f"- {f}" for f in changed_files if f)}
 
 ## Diff
 ```diff
@@ -210,28 +212,38 @@ Use inline code references where applicable."""
         # Set commit status based on verdict
         if verdict == "approve":
             set_commit_status(
-                repo, head_sha, "success",
-                "Gemini approved this PR", status_context,
+                repo,
+                head_sha,
+                "success",
+                "Gemini approved this PR",
+                status_context,
             )
         elif verdict == "request_changes":
             set_commit_status(
-                repo, head_sha, "failure",
-                "Gemini requested changes", status_context,
+                repo,
+                head_sha,
+                "failure",
+                "Gemini requested changes",
+                status_context,
             )
         else:
             set_commit_status(
-                repo, head_sha, "failure",
-                "Gemini did not explicitly approve", status_context,
+                repo,
+                head_sha,
+                "failure",
+                "Gemini did not explicitly approve",
+                status_context,
             )
 
     except Exception as e:
         print(f"Error generating review: {e}")
-        pr.create_issue_comment(
-            f"Gemini Code Review encountered an error: {str(e)}"
-        )
+        pr.create_issue_comment(f"Gemini Code Review encountered an error: {str(e)}")
         set_commit_status(
-            repo, head_sha, "error",
-            "Gemini review failed", status_context,
+            repo,
+            head_sha,
+            "error",
+            "Gemini review failed",
+            status_context,
         )
 
 

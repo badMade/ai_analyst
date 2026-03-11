@@ -8,7 +8,6 @@ import json
 from unittest.mock import MagicMock, patch
 
 import pytest
-import numpy as np
 
 
 class TestStandaloneAnalystInit:
@@ -35,7 +34,7 @@ class TestStandaloneAnalystInit:
     def test_init_creates_analysis_context(self, mock_settings):
         """Should create an AnalysisContext."""
         with patch("anthropic.Anthropic"):
-            from analyst import StandaloneAnalyst, AnalysisContext
+            from analyst import AnalysisContext, StandaloneAnalyst
 
             analyst = StandaloneAnalyst()
 
@@ -83,10 +82,9 @@ class TestExecuteTool:
 
             analyst = StandaloneAnalyst()
 
-            result = analyst._execute_tool("load_dataset", {
-                "file_path": sample_csv_file,
-                "name": "my_data"
-            })
+            result = analyst._execute_tool(
+                "load_dataset", {"file_path": sample_csv_file, "name": "my_data"}
+            )
 
             result_dict = json.loads(result)
             assert result_dict["name"] == "my_data"
@@ -102,10 +100,9 @@ class TestExecuteTool:
 
     def test_execute_preview_data(self, analyst_with_data):
         """Should preview dataset rows."""
-        result = analyst_with_data._execute_tool("preview_data", {
-            "dataset_name": "test_data",
-            "n_rows": 5
-        })
+        result = analyst_with_data._execute_tool(
+            "preview_data", {"dataset_name": "test_data", "n_rows": 5}
+        )
 
         result_dict = json.loads(result)
         assert len(result_dict["data"]) == 5
@@ -113,20 +110,18 @@ class TestExecuteTool:
 
     def test_execute_preview_data_with_columns(self, analyst_with_data):
         """Should preview specific columns."""
-        result = analyst_with_data._execute_tool("preview_data", {
-            "dataset_name": "test_data",
-            "n_rows": 3,
-            "columns": ["id", "value"]
-        })
+        result = analyst_with_data._execute_tool(
+            "preview_data", {"dataset_name": "test_data", "n_rows": 3, "columns": ["id", "value"]}
+        )
 
         result_dict = json.loads(result)
         assert set(result_dict["columns"]) == {"id", "value"}
 
     def test_execute_describe_statistics(self, analyst_with_data):
         """Should compute descriptive statistics."""
-        result = analyst_with_data._execute_tool("describe_statistics", {
-            "dataset_name": "test_data"
-        })
+        result = analyst_with_data._execute_tool(
+            "describe_statistics", {"dataset_name": "test_data"}
+        )
 
         result_dict = json.loads(result)
         assert "statistics" in result_dict
@@ -134,10 +129,9 @@ class TestExecuteTool:
 
     def test_execute_compute_correlation(self, analyst_with_data):
         """Should compute correlation matrix."""
-        result = analyst_with_data._execute_tool("compute_correlation", {
-            "dataset_name": "test_data",
-            "method": "pearson"
-        })
+        result = analyst_with_data._execute_tool(
+            "compute_correlation", {"dataset_name": "test_data", "method": "pearson"}
+        )
 
         result_dict = json.loads(result)
         assert "correlations" in result_dict
@@ -145,11 +139,9 @@ class TestExecuteTool:
 
     def test_execute_detect_outliers_iqr(self, analyst_with_data):
         """Should detect outliers using IQR method."""
-        result = analyst_with_data._execute_tool("detect_outliers", {
-            "dataset_name": "test_data",
-            "column": "value",
-            "method": "iqr"
-        })
+        result = analyst_with_data._execute_tool(
+            "detect_outliers", {"dataset_name": "test_data", "column": "value", "method": "iqr"}
+        )
 
         result_dict = json.loads(result)
         assert result_dict["method"] == "iqr"
@@ -159,12 +151,10 @@ class TestExecuteTool:
 
     def test_execute_detect_outliers_zscore(self, analyst_with_data):
         """Should detect outliers using Z-score method."""
-        result = analyst_with_data._execute_tool("detect_outliers", {
-            "dataset_name": "test_data",
-            "column": "value",
-            "method": "zscore",
-            "threshold": 2.5
-        })
+        result = analyst_with_data._execute_tool(
+            "detect_outliers",
+            {"dataset_name": "test_data", "column": "value", "method": "zscore", "threshold": 2.5},
+        )
 
         result_dict = json.loads(result)
         assert result_dict["method"] == "zscore"
@@ -172,11 +162,10 @@ class TestExecuteTool:
 
     def test_execute_group_analysis(self, analyst_with_data):
         """Should perform grouped aggregation."""
-        result = analyst_with_data._execute_tool("group_analysis", {
-            "dataset_name": "test_data",
-            "group_by": "category",
-            "agg_column": "value"
-        })
+        result = analyst_with_data._execute_tool(
+            "group_analysis",
+            {"dataset_name": "test_data", "group_by": "category", "agg_column": "value"},
+        )
 
         result_dict = json.loads(result)
         assert "results" in result_dict
@@ -185,9 +174,9 @@ class TestExecuteTool:
 
     def test_execute_check_data_quality(self, analyst_with_data):
         """Should check data quality."""
-        result = analyst_with_data._execute_tool("check_data_quality", {
-            "dataset_name": "test_data"
-        })
+        result = analyst_with_data._execute_tool(
+            "check_data_quality", {"dataset_name": "test_data"}
+        )
 
         result_dict = json.loads(result)
         assert "total_rows" in result_dict
@@ -197,10 +186,9 @@ class TestExecuteTool:
 
     def test_execute_test_normality(self, analyst_with_data):
         """Should test normality of column."""
-        result = analyst_with_data._execute_tool("test_normality", {
-            "dataset_name": "test_data",
-            "column": "value"
-        })
+        result = analyst_with_data._execute_tool(
+            "test_normality", {"dataset_name": "test_data", "column": "value"}
+        )
 
         result_dict = json.loads(result)
         assert result_dict["column"] == "value"
@@ -210,10 +198,9 @@ class TestExecuteTool:
 
     def test_execute_analyze_trend(self, analyst_with_data):
         """Should analyze trend in column."""
-        result = analyst_with_data._execute_tool("analyze_trend", {
-            "dataset_name": "test_data",
-            "column": "value"
-        })
+        result = analyst_with_data._execute_tool(
+            "analyze_trend", {"dataset_name": "test_data", "column": "value"}
+        )
 
         result_dict = json.loads(result)
         assert "trend" in result_dict
@@ -228,9 +215,7 @@ class TestExecuteTool:
 
     def test_execute_tool_with_error(self, analyst_with_data):
         """Should handle tool execution errors gracefully."""
-        result = analyst_with_data._execute_tool("preview_data", {
-            "dataset_name": "nonexistent"
-        })
+        result = analyst_with_data._execute_tool("preview_data", {"dataset_name": "nonexistent"})
 
         result_dict = json.loads(result)
         assert "error" in result_dict
@@ -277,31 +262,30 @@ class TestAnalyze:
         assert "system" in call_args.kwargs
         assert "data analyst" in call_args.kwargs["system"].lower()
 
-    def test_analyze_processes_tool_use(self, analyst, mock_api_response_tool_use, mock_api_response_end_turn, sample_csv_file):
+    def test_analyze_processes_tool_use(
+        self, analyst, mock_api_response_tool_use, mock_api_response_end_turn, sample_csv_file
+    ):
         """Should process tool use requests."""
         # First call returns tool use, second returns end turn
         analyst.client.messages.create.side_effect = [
             mock_api_response_tool_use,
-            mock_api_response_end_turn
+            mock_api_response_end_turn,
         ]
 
         # Mock the tool to not fail
-        mock_api_response_tool_use.content[0].input = {
-            "file_path": sample_csv_file,
-            "name": "test"
-        }
+        mock_api_response_tool_use.content[0].input = {"file_path": sample_csv_file, "name": "test"}
 
         result = analyst.analyze("Load the data")
 
         assert isinstance(result, str)
         assert analyst.client.messages.create.call_count == 2
 
-    def test_analyze_respects_max_iterations(self, analyst, mock_api_response_tool_use, sample_csv_file):
+    def test_analyze_respects_max_iterations(
+        self, analyst, mock_api_response_tool_use, sample_csv_file
+    ):
         """Should stop after max iterations."""
         # Always return tool use to simulate infinite loop
-        mock_api_response_tool_use.content[0].input = {
-            "file_path": sample_csv_file
-        }
+        mock_api_response_tool_use.content[0].input = {"file_path": sample_csv_file}
         analyst.client.messages.create.return_value = mock_api_response_tool_use
         analyst.max_iterations = 3
 
@@ -351,7 +335,7 @@ class TestCreateAnalyst:
     def test_create_analyst_returns_instance(self, mock_settings):
         """Should return StandaloneAnalyst instance."""
         with patch("anthropic.Anthropic"):
-            from analyst import create_analyst, StandaloneAnalyst
+            from analyst import StandaloneAnalyst, create_analyst
 
             analyst = create_analyst()
 
@@ -410,7 +394,7 @@ class TestToolDefinitions:
             "group_analysis",
             "check_data_quality",
             "test_normality",
-            "analyze_trend"
+            "analyze_trend",
         }
 
         assert expected.issubset(tool_names)
