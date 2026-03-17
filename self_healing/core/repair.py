@@ -6,6 +6,7 @@ Generates and applies fixes for detected errors with backup and rollback support
 
 from __future__ import annotations
 
+import shlex
 import shutil
 import subprocess
 import time
@@ -106,7 +107,7 @@ class RepairEngine:
             reasoning=f"Module '{module}' not found, installing {package}",
             shell_commands=[
                 ShellCommand(
-                    command=f"pip install {package}",
+                    command=f"pip install {shlex.quote(package)}",
                     description=f"Install {package}",
                 )
             ],
@@ -178,6 +179,7 @@ class RepairEngine:
         """Generate fix for file not found errors."""
         file_path = error.location.file_path
 
+        safe_path = shlex.quote(str(file_path.parent)) if file_path else "'.'"
         return Fix(
             error=error,
             strategy=FixStrategy.CREATE_DIRECTORY,
@@ -185,7 +187,7 @@ class RepairEngine:
             reasoning=f"File or directory not found: {file_path}",
             shell_commands=[
                 ShellCommand(
-                    command=f"mkdir -p {file_path.parent if file_path else '.'}",
+                    command=f"mkdir -p {safe_path}",
                     description="Create parent directory",
                 )
             ],
