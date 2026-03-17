@@ -1,0 +1,4 @@
+## 2025-03-16 - Command Injection in Shell Commands
+**Vulnerability:** Constructing shell commands via `f-strings` with unsanitized dynamic variables (e.g., `f"pip install {package}"` and `f"mkdir -p {file_path.parent}"`) in `self_healing/core/repair.py` creates a Command Injection vulnerability (CWE-78) when `subprocess.run(shell=True)` executes them.
+**Learning:** We must not change `shell=True` to `shell=False` arbitrarily since many commands rely on shell operators (like redirection, wildcards, pipelines). Trying to split them with `shlex.split` breaks quotes on Windows and destroys shell behavior.
+**Prevention:** If `shell=True` must be used to preserve shell execution semantics, variables injected into the command string *must* be sanitized and correctly quoted using `shlex.quote(var)` so that shell interpreters treat them strictly as arguments rather than executable operations or operators.
