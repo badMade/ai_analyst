@@ -1,4 +1,5 @@
 from pathlib import Path
+
 from pydantic_settings import BaseSettings
 
 BASE_DATA_DIR: Path = Path.cwd().resolve()
@@ -25,7 +26,7 @@ def sanitize_path(path_str: str) -> Path:
     :return: A resolved, safe Path under the current working directory.
     :raises ValueError: If the path resolves outside the allowed root.
     """
-    base_dir: Path = Path.cwd().resolve()
+    base_dir: Path = BASE_DATA_DIR
 
     # Expand user home (e.g., "~") but do not yet trust relativeness/absoluteness
     raw_path: Path = Path(path_str).expanduser()

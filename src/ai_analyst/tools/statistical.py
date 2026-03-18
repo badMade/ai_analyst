@@ -1,9 +1,9 @@
 from collections import namedtuple
-from scipy import stats
 from typing import Any
 
 import numpy as np
 import pandas as pd
+from scipy import stats
 
 TestResult = namedtuple("TestResult", ["test_name", "statistic", "p_value", "significant", "interpretation"])
 TrendResult = namedtuple("TrendResult", ["slope", "intercept", "p_value", "trend"])
@@ -31,13 +31,26 @@ def test_normality(series: pd.Series | np.ndarray) -> TestResult:
     )
 
 def detect_trend(values: pd.Series | np.ndarray) -> dict[str, float | str]:
-    """Detect trend using linear regression."""
-    arr = np.asarray(values, dtype=float)
-    arr = arr[~np.isnan(arr)]
+    """Detect trend using linear regression.
+
+    Handles pd.Series by coercing to numeric and dropping NaN values before
+    fitting a linear regression model. Returns a dict with 'trend' direction
+    ('increasing', 'decreasing', or 'flat'), 'slope', and 'p_value'.
+
+    Raises:
+        ValueError: If the cleaned data has fewer than 2 valid data points.
+    """
+    if isinstance(values, pd.Series):
+        arr = pd.to_numeric(values, errors="coerce").dropna().to_numpy()
+    else:
+        numeric_array = np.asarray(values, dtype=float)
+        arr = numeric_array[~np.isnan(numeric_array)]
+
     if arr.size < 2:
-        return {"trend": "insufficient data", "slope": np.nan, "p_value": np.nan}
+        raise ValueError("At least two valid data points are required to detect a trend.")
+
     x = np.arange(len(arr))
-    slope, intercept, r_value, p_value, std_err = stats.linregress(x, arr)
+    slope, _intercept, _r_value, p_value, _std_err = stats.linregress(x, arr)
     if p_value >= 0.05:
         trend = "flat"
     elif slope > 0:
@@ -46,15 +59,36 @@ def detect_trend(values: pd.Series | np.ndarray) -> dict[str, float | str]:
         trend = "decreasing"
     return {"trend": trend, "slope": float(slope), "p_value": float(p_value)}
 
-def test_correlation_significance(x: pd.Series, y: pd.Series) -> tuple[float, float]:
-    """Compute Pearson correlation coefficient and p-value for two series."""
-    df = pd.DataFrame({"x": x, "y": y})
-    df["x"] = pd.to_numeric(df["x"], errors="coerce")
-    df["y"] = pd.to_numeric(df["y"], errors="coerce")
-    df.dropna(inplace=True)
+def test_correlation_significance(x: pd.Series | np.ndarray, y: pd.Series | np.ndarray) -> tuple[float, float]:
+    """Compute Pearson correlation coefficient and p-value for two series or arrays.
 
-    if len(df) < 2:
-        return (np.nan, np.nan)
+    This function validates and cleans the input data by:
+    - Converting to numeric types where possible
+    - Dropping NaN values (aligned across both inputs)
+    - Ensuring the inputs have matching lengths after cleaning
+    - Requiring at least two valid data points
 
-    corr, p_value = stats.pearsonr(df["x"], df["y"])
+    Raises:
+        ValueError: If the cleaned inputs have different lengths or fewer than two points.
+    """
+    if isinstance(x, pd.Series) and isinstance(y, pd.Series):
+        df = pd.concat([x, y], axis=1, keys=["x", "y"])
+        df = df.apply(pd.to_numeric, errors="coerce").dropna()
+        x_clean = df["x"].to_numpy()
+        y_clean = df["y"].to_numpy()
+    else:
+        x_array = np.asarray(x, dtype=float)
+        y_array = np.asarray(y, dtype=float)
+
+        if x_array.shape[0] != y_array.shape[0]:
+            raise ValueError("x and y must have the same length to compute Pearson correlation.")
+
+        valid_mask = ~np.isnan(x_array) & ~np.isnan(y_array)
+        x_clean = x_array[valid_mask]
+        y_clean = y_array[valid_mask]
+
+    if x_clean.size < 2 or y_clean.size < 2:
+        raise ValueError("At least two valid data points are required to compute Pearson correlation.")
+
+    corr, p_value = stats.pearsonr(x_clean, y_clean)
     return float(corr), float(p_value)
