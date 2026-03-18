@@ -33,6 +33,9 @@ def test_normality(series: pd.Series | np.ndarray) -> TestResult:
 def detect_trend(values: pd.Series | np.ndarray) -> dict[str, float | str]:
     """Detect trend using linear regression."""
     arr = np.asarray(values, dtype=float)
+    arr = arr[~np.isnan(arr)]
+    if arr.size < 2:
+        return {"trend": "insufficient data", "slope": np.nan, "p_value": np.nan}
     x = np.arange(len(arr))
     slope, intercept, r_value, p_value, std_err = stats.linregress(x, arr)
     if p_value >= 0.05:
