@@ -28,8 +28,8 @@ def get_auth_method() -> tuple[AuthMethod, str]:
     if settings.anthropic_api_key.startswith("sk-ant-api"):
         return AuthMethod.PRO_SUBSCRIPTION, settings.anthropic_api_key
 
-    if not settings.anthropic_api_key:
-        raise ValueError("Missing ANTHROPIC_API_KEY")
+    if not settings.anthropic_api_key or settings.anthropic_api_key == "sk-dummy-key":
+        raise ValueError("Missing ANTHROPIC_API_KEY. Please set it in your environment or .env file.")
 
     return AuthMethod.API_KEY, settings.anthropic_api_key
 
