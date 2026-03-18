@@ -12,7 +12,7 @@ class AuthMethod(str, Enum):
 
 
 class Settings(BaseSettings):
-    anthropic_api_key: str = "sk-dummy-key"
+    anthropic_api_key: str
 
     class Config:
         env_file = ".env"
