@@ -32,9 +32,12 @@ def test_normality(series: pd.Series | np.ndarray) -> TestResult:
 
 def detect_trend(values: pd.Series | np.ndarray) -> dict[str, float | str]:
     """Detect trend using linear regression."""
-    arr = np.asarray(values, dtype=float)
+    arr = pd.to_numeric(pd.Series(values), errors="coerce").dropna().to_numpy()
+    if len(arr) < 2:
+        return {"trend": "flat", "slope": 0.0, "p_value": 1.0}
+
     x = np.arange(len(arr))
-    slope, intercept, r_value, p_value, std_err = stats.linregress(x, arr)
+    slope, _intercept, _r_value, p_value, _std_err = stats.linregress(x, arr)
     if p_value >= 0.05:
         trend = "flat"
     elif slope > 0:
@@ -45,5 +48,12 @@ def detect_trend(values: pd.Series | np.ndarray) -> dict[str, float | str]:
 
 def test_correlation_significance(x: pd.Series, y: pd.Series) -> tuple[float, float]:
     """Compute Pearson correlation coefficient and p-value for two series."""
-    corr, p_value = stats.pearsonr(x, y)
+    x_numeric = pd.to_numeric(x, errors="coerce")
+    y_numeric = pd.to_numeric(y, errors="coerce")
+    paired = pd.concat([x_numeric, y_numeric], axis=1).dropna()
+
+    if len(paired) < 2:
+        return 0.0, 1.0
+
+    corr, p_value = stats.pearsonr(paired.iloc[:, 0], paired.iloc[:, 1])
     return float(corr), float(p_value)
