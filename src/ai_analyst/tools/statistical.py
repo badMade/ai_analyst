@@ -48,5 +48,13 @@ def detect_trend(values: pd.Series | np.ndarray) -> dict[str, float | str]:
 
 def test_correlation_significance(x: pd.Series, y: pd.Series) -> tuple[float, float]:
     """Compute Pearson correlation coefficient and p-value for two series."""
-    corr, p_value = stats.pearsonr(x, y)
+    df = pd.DataFrame({"x": x, "y": y})
+    df["x"] = pd.to_numeric(df["x"], errors="coerce")
+    df["y"] = pd.to_numeric(df["y"], errors="coerce")
+    df.dropna(inplace=True)
+
+    if len(df) < 2:
+        return (np.nan, np.nan)
+
+    corr, p_value = stats.pearsonr(df["x"], df["y"])
     return float(corr), float(p_value)
